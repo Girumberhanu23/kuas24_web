@@ -1,26 +1,156 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Tailwind theme tokens (always reference app variables so
+     light/dark overrides work reliably at runtime). */
+  --color-bg: var(--app-bg);
+  --color-surface: var(--app-surface);
+  --color-card: var(--app-card);
+  --color-card-hover: var(--app-card-hover);
+  --color-border: var(--app-border);
+  --color-input: var(--app-input);
+
+  --color-primary: var(--app-primary);
+  --color-primary-hover: var(--app-primary-hover);
+  --color-secondary: var(--app-secondary);
+  --color-secondary-hover: var(--app-secondary-hover);
+
+  --color-live: var(--app-live);
+  --color-text: var(--app-text);
+  --color-text-secondary: var(--app-text-secondary);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
+:root {
+  /* Light theme (brand palette)
+     bgLight: #f0f8ff
+     bgDark: #05070A
+     primary: #053eff
+     secondary: #00C2FF
+  */
+  --app-bg: #f0f8ff;
+  --app-surface: #deedfb;
+  --app-card: #ffffff;
+  --app-card-hover: color-mix(in oklab, var(--app-card) 92%, var(--app-primary) 8%);
+  --app-border: #d7e6f5;
+  --app-input: #fcfcff;
+
+  --app-primary: #053eff;
+  --app-primary-hover: color-mix(in oklab, var(--app-primary) 88%, black 12%);
+  --app-secondary: #00c2ff;
+  --app-secondary-hover: color-mix(in oklab, var(--app-secondary) 88%, black 12%);
+
+  --app-live: #ff4757;
+  --app-text: #0b1220;
+  --app-text-secondary: #3f5470;
+  color-scheme: light;
+}
+
+/* Dark theme: restore the previous subtle (Livescore-inspired) dark UI,
+   while using your brand primary color (#053eff). */
+:root[data-theme="dark"] {
+  --app-bg: #0e1118;
+  --app-surface: #171b26;
+  --app-card: #1e2231;
+  --app-card-hover: #262b3d;
+  --app-border: #2a2f42;
+  --app-input: #1a1e2c;
+
+  --app-primary: #053eff;
+  --app-primary-hover: color-mix(in oklab, var(--app-primary) 88%, white 12%);
+  /* Keep secondary subtle/unchanged from prior look */
+  --app-secondary: #00e87b;
+  --app-secondary-hover: #00c466;
+
+  --app-live: #ff4757;
+  --app-text: #ffffff;
+  --app-text-secondary: #8990a5;
+  color-scheme: dark;
+}
+
+/* If the user never toggles, follow system preference */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme]) {
+    --app-bg: #0e1118;
+    --app-surface: #171b26;
+    --app-card: #1e2231;
+    --app-card-hover: #262b3d;
+    --app-border: #2a2f42;
+    --app-input: #1a1e2c;
+
+    --app-primary: #053eff;
+    --app-primary-hover: color-mix(in oklab, var(--app-primary) 88%, white 12%);
+    --app-secondary: #00e87b;
+    --app-secondary-hover: #00c466;
+
+    --app-live: #ff4757;
+    --app-text: #ffffff;
+    --app-text-secondary: #8990a5;
+    color-scheme: dark;
   }
 }
 
+* {
+  box-sizing: border-box;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklab, var(--color-text-secondary) 80%, var(--color-primary) 20%);
+}
+
+/* Hide scrollbar for sport filter horizontal scroll */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Live pulse animation */
+@keyframes livePulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.live-pulse {
+  animation: livePulse 1.5s ease-in-out infinite;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
