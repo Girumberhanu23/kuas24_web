@@ -16,6 +16,7 @@
   --color-secondary-hover: var(--app-secondary-hover);
 
   --color-live: var(--app-live);
+  --color-goal: var(--app-goal);
   --color-text: var(--app-text);
   --color-text-secondary: var(--app-text-secondary);
   --font-sans: var(--font-geist-sans);
@@ -42,6 +43,7 @@
   --app-secondary-hover: color-mix(in oklab, var(--app-secondary) 88%, black 12%);
 
   --app-live: #ff4757;
+  --app-goal: #00b86b;
   --app-text: #0b1220;
   --app-text-secondary: #3f5470;
   color-scheme: light;
@@ -64,6 +66,7 @@
   --app-secondary-hover: #00c466;
 
   --app-live: #ff4757;
+  --app-goal: #00e87b;
   --app-text: #ffffff;
   --app-text-secondary: #8990a5;
   color-scheme: dark;
@@ -85,6 +88,7 @@
     --app-secondary-hover: #00c466;
 
     --app-live: #ff4757;
+    --app-goal: #00e87b;
     --app-text: #ffffff;
     --app-text-secondary: #8990a5;
     color-scheme: dark;
@@ -96,7 +100,26 @@
 }
 
 body {
-  background: var(--color-bg);
+  background-color: var(--color-bg);
+  /* Subtle texture overlay (CSS-only) that adapts to light/dark via theme vars. */
+  background-image:
+    radial-gradient(
+      circle at 1px 1px,
+      color-mix(in oklab, var(--color-text-secondary) 12%, transparent) 1px,
+      transparent 0
+    ),
+    repeating-linear-gradient(
+      45deg,
+      color-mix(in oklab, var(--color-text-secondary) 6%, transparent) 0 1px,
+      transparent 1px 12px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      color-mix(in oklab, var(--color-text-secondary) 5%, transparent) 0 1px,
+      transparent 1px 12px
+    );
+  background-size: 22px 22px, auto, auto;
+  background-attachment: fixed;
   color: var(--color-text);
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
   margin: 0;

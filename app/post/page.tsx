@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { API_BASE_URL } from "../lib/api";
 import { leagueCategories } from "../lib/data";
-
-const apiBaseUrl = "http://localhost:3000/";
 
 async function createNewsPost(payload: {
   broadcasterId: string;
@@ -16,7 +15,7 @@ async function createNewsPost(payload: {
   tags: string[];
   isHeadline: boolean;
 }) {
-  const response = await fetch(`${apiBaseUrl}createNews`, {
+  const response = await fetch(`${API_BASE_URL}createNews`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

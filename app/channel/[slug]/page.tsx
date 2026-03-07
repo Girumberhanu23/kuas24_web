@@ -1,7 +1,6 @@
 import Link from "next/link";
-import AdCard from "../../components/AdCard";
 import NewsCard from "../../components/NewsCard";
-import { newsArticles } from "../../lib/data";
+import { fetchNewsFromApi } from "../../lib/news";
 import { slugify } from "../../lib/slug";
 
 function displayNameFromSlug(slug: string): string {
@@ -16,19 +15,20 @@ function displayNameFromSlug(slug: string): string {
     .join(" ");
 }
 
-export default function ChannelPage({
+export default async function ChannelPage({
   params,
 }: {
   params: { slug: string };
 }) {
+  const allNews = await fetchNewsFromApi();
   const decoded = decodeURIComponent(params.slug);
 
-  const authors = Array.from(new Set(newsArticles.map((a) => a.author)));
+  const authors = Array.from(new Set(allNews.map((a) => a.author)));
   const matchedAuthor = authors.find((a) => slugify(a) === decoded);
 
   const channelName = matchedAuthor ?? displayNameFromSlug(decoded) ?? "Kuas24";
 
-  const channelPosts = newsArticles
+  const channelPosts = allNews
     .filter((a) => (matchedAuthor ? a.author === matchedAuthor : true))
     .slice()
     .sort((a, b) => (a.date < b.date ? 1 : -1));

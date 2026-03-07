@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Fixture } from "../lib/types";
 
 interface FixtureCardProps {
@@ -7,9 +8,25 @@ interface FixtureCardProps {
 export default function FixtureCard({ fixture }: FixtureCardProps) {
   const isLive = fixture.status === "live";
   const isFinished = fixture.status === "finished";
+  const fixtureId = String(fixture.id ?? "").trim();
+
+  const homeInitials = fixture.homeTeam
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 3);
+
+  const awayInitials = fixture.awayTeam
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 3);
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 transition-all hover:border-primary/20 hover:bg-card-hover">
+    <Link
+      href={`/fixtures/${encodeURIComponent(fixtureId)}`}
+      className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 transition-all hover:border-primary/20 hover:bg-card-hover"
+    >
       {/* Status indicator */}
       <div className="flex w-16 shrink-0 flex-col items-center">
         {isLive ? (
@@ -37,13 +54,17 @@ export default function FixtureCard({ fixture }: FixtureCardProps) {
         {/* Home team */}
         <div className="flex items-center justify-between">
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="flex h-6 w-6 items-center justify-center rounded bg-surface text-[9px] font-bold text-text-secondary">
-              {fixture.homeTeam
-                .split(" ")
-                .map((w) => w[0])
-                .join("")
-                .slice(0, 3)}
-            </div>
+            {fixture.homeTeamLogo ? (
+              <img
+                src={fixture.homeTeamLogo}
+                alt={`${fixture.homeTeam} logo`}
+                className="h-6 w-6 shrink-0 object-contain"
+              />
+            ) : (
+              <div className="flex h-6 w-6 items-center justify-center rounded bg-surface text-[9px] font-bold text-text-secondary">
+                {homeInitials}
+              </div>
+            )}
             <span
               className={`min-w-0 truncate text-sm font-medium ${
                 isFinished &&
@@ -71,13 +92,17 @@ export default function FixtureCard({ fixture }: FixtureCardProps) {
         {/* Away team */}
         <div className="flex items-center justify-between">
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="flex h-6 w-6 items-center justify-center rounded bg-surface text-[9px] font-bold text-text-secondary">
-              {fixture.awayTeam
-                .split(" ")
-                .map((w) => w[0])
-                .join("")
-                .slice(0, 3)}
-            </div>
+            {fixture.awayTeamLogo ? (
+              <img
+                src={fixture.awayTeamLogo}
+                alt={`${fixture.awayTeam} logo`}
+                className="h-6 w-6 shrink-0 object-contain"
+              />
+            ) : (
+              <div className="flex h-6 w-6 items-center justify-center rounded bg-surface text-[9px] font-bold text-text-secondary">
+                {awayInitials}
+              </div>
+            )}
             <span
               className={`min-w-0 truncate text-sm font-medium ${
                 isFinished &&
@@ -102,6 +127,6 @@ export default function FixtureCard({ fixture }: FixtureCardProps) {
           </span>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
