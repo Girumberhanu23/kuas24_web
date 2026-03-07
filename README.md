@@ -2,6 +2,13 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+### Environment variables (API-Sports)
+
+This app fetches fixtures via a server-side Next.js route, so the API key stays on the server.
+
+- Copy `.env.example` to `.env.local`
+- Set `API_SPORTS_KEY` to your API-Sports key
+
 First, run the development server:
 
 ```bash
@@ -14,7 +21,7 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3003](http://localhost:3003) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

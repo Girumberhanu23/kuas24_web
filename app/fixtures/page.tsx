@@ -1,22 +1,76 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SportFilter from "../components/SportFilter";
 import FixtureCard from "../components/FixtureCard";
-import { fixtures } from "../lib/data";
+import type { Fixture } from "../lib/types";
 
 type StatusFilter = "all" | "live" | "upcoming" | "finished";
+
+function pad2(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function toYYYYMMDDLocal(date: Date) {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(
+    date.getDate()
+  )}`;
+}
 
 export default function FixturesPage() {
   const [selectedLeague, setSelectedLeague] = useState("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
-  const filteredFixtures = fixtures.filter((f) => {
-    const leagueMatch =
-      selectedLeague === "all" || f.league === selectedLeague;
-    const statusMatch = statusFilter === "all" || f.status === statusFilter;
-    return leagueMatch && statusMatch;
-  });
+  const baseDate = useMemo(() => {
+    const d = new Date();
+    d.setFullYear(2023);
+    return d;
+  }, []);
+
+  const [selectedDate, setSelectedDate] = useState<Date>(baseDate);
+  const [apiFixtures, setApiFixtures] = useState<Fixture[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const date = toYYYYMMDDLocal(selectedDate);
+        const res = await fetch(
+          `/api/fixtures?league=39&season=2023`,
+          { signal: controller.signal }
+        );
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(
+            body?.error || `Failed to load fixtures (HTTP ${res.status})`
+          );
+        }
+        const json = (await res.json()) as { fixtures: Fixture[] };
+        setApiFixtures(json.fixtures ?? []);
+      } catch (e) {
+        if (controller.signal.aborted) return;
+        setError(e instanceof Error ? e.message : "Failed to load fixtures");
+        setApiFixtures([]);
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    };
+    load();
+    return () => controller.abort();
+  }, [selectedDate]);
+
+  const filteredFixtures = useMemo(() => {
+    return apiFixtures.filter((f) => {
+      const leagueMatch =
+        selectedLeague === "all" || f.league === selectedLeague;
+      const statusMatch = statusFilter === "all" || f.status === statusFilter;
+      return leagueMatch && statusMatch;
+    });
+  }, [apiFixtures, selectedLeague, statusFilter]);
 
   // Group by league
   const grouped = filteredFixtures.reduce(
@@ -25,7 +79,7 @@ export default function FixturesPage() {
       acc[fixture.league].push(fixture);
       return acc;
     },
-    {} as Record<string, typeof fixtures>
+    {} as Record<string, Fixture[]>
   );
 
   const statusTabs: { id: StatusFilter; label: string; color: string }[] = [
@@ -73,14 +127,16 @@ export default function FixturesPage() {
       {/* Date Bar */}
       <div className="mb-6 hide-scrollbar flex gap-2 overflow-x-auto">
         {[-2, -1, 0, 1, 2, 3, 4].map((offset) => {
-          const date = new Date();
-          date.setDate(date.getDate() + offset);
-          const isToday = offset === 0;
+          const date = new Date(baseDate);
+          date.setDate(baseDate.getDate() + offset);
+          const isSelected =
+            toYYYYMMDDLocal(date) === toYYYYMMDDLocal(selectedDate);
           return (
             <button
               key={offset}
+              onClick={() => setSelectedDate(date)}
               className={`flex flex-shrink-0 flex-col items-center rounded-lg px-4 py-2 transition-all ${
-                isToday
+                isSelected
                   ? "bg-primary text-white"
                   : "bg-card text-text-secondary hover:bg-card-hover hover:text-text"
               }`}
@@ -100,12 +156,27 @@ export default function FixturesPage() {
       </div>
 
       {/* Fixtures List */}
-      {Object.keys(grouped).length > 0 ? (
+      {loading ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card py-16">
+          <p className="text-sm text-text-secondary">Loading fixtures…</p>
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card py-16">
+          <p className="text-sm text-text-secondary">{error}</p>
+        </div>
+      ) : Object.keys(grouped).length > 0 ? (
         <div className="grid gap-6">
           {Object.entries(grouped).map(([league, leagueFixtures]) => (
             <div key={league}>
               <div className="mb-3 flex items-center gap-2">
                 <div className="h-5 w-1 rounded-full bg-primary" />
+                {leagueFixtures[0]?.leagueLogo ? (
+                  <img
+                    src={leagueFixtures[0].leagueLogo}
+                    alt={`${league} logo`}
+                    className="h-4 w-4 object-contain"
+                  />
+                ) : null}
                 <h3 className="text-sm font-bold uppercase tracking-wider text-text-secondary">
                   {league}
                 </h3>
@@ -145,3 +216,4 @@ export default function FixturesPage() {
     </div>
   );
 }
+

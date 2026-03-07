@@ -42,9 +42,18 @@ export default function NewsCard({
         className="group relative cursor-pointer overflow-hidden rounded-2xl border border-border bg-card transition-all hover:border-primary/30"
         aria-label={`Open: ${article.title}`}
       >
-        <div
-          className={`relative h-56 w-full bg-gradient-to-br ${article.imageGradient} sm:h-64`}
-        >
+        <div className="relative h-56 w-full sm:h-64">
+          {article.imageUrl ? (
+            <img
+              src={article.imageUrl}
+              alt={article.title}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div
+              className={`h-full w-full bg-gradient-to-br ${article.imageGradient}`}
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
           <div className="absolute left-4 top-4 flex items-center gap-2">
             <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold text-white">
@@ -125,9 +134,17 @@ export default function NewsCard({
       className="group flex cursor-pointer flex-col gap-4 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/30 hover:bg-card-hover sm:flex-row"
       aria-label={`Open: ${article.title}`}
     >
-      <div
-        className={`h-40 w-full shrink-0 rounded-lg bg-gradient-to-br ${article.imageGradient} sm:h-28 sm:w-28`}
-      />
+      <div className="h-40 w-full shrink-0 overflow-hidden rounded-lg sm:h-28 sm:w-28">
+        {article.imageUrl ? (
+          <img
+            src={article.imageUrl}
+            alt={article.title}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className={`h-full w-full bg-gradient-to-br ${article.imageGradient}`} />
+        )}
+      </div>
       <div className="flex min-w-0 flex-1 flex-col justify-between">
         <div>
           <div className="mb-1.5 flex flex-wrap items-center gap-2">

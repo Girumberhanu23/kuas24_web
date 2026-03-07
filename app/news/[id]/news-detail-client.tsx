@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AdCard from "../../components/AdCard";
 import NewsCard from "../../components/NewsCard";
-import { newsArticles } from "../../lib/data";
 import type { NewsArticle } from "../../lib/types";
 import { slugify } from "../../lib/slug";
 
@@ -19,11 +18,14 @@ function hashStringToPositiveInt(value: string): number {
   return Math.abs(hash);
 }
 
-function formatCompactNumber(value: number): string {
-  return new Intl.NumberFormat("en", { notation: "compact" }).format(value);
-}
 
-export default function NewsDetailClient({ article }: { article: NewsArticle }) {
+export default function NewsDetailClient({
+  article,
+  relatedNews,
+}: {
+  article: NewsArticle;
+  relatedNews: NewsArticle[];
+}) {
   const [favorites, setFavorites] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
     try {
@@ -35,6 +37,7 @@ export default function NewsDetailClient({ article }: { article: NewsArticle }) 
   });
 
   const isFavorite = favorites.includes(article.id);
+  const [isImageOpen, setIsImageOpen] = useState(false);
 
   const toggleFavorite = () => {
     setFavorites((prev) => {
@@ -46,21 +49,20 @@ export default function NewsDetailClient({ article }: { article: NewsArticle }) 
     });
   };
 
+  useEffect(() => {
+    if (!isImageOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsImageOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isImageOpen]);
+
   const related = useMemo(() => {
-    const sameLeague = newsArticles
-      .filter((a) => a.id !== article.id)
-      .filter((a) => a.league === article.league);
-
-    const fillPool = newsArticles.filter((a) => a.id !== article.id);
-
-    const combined = [...sameLeague];
-    for (const item of fillPool) {
-      if (combined.length >= 6) break;
-      if (!combined.find((a) => a.id === item.id)) combined.push(item);
-    }
-
-    return combined.slice(0, 6);
-  }, [article.id, article.league]);
+    return relatedNews
+      .filter((item) => item.id !== article.id)
+      .slice(0, 6);
+  }, [article.id, relatedNews]);
 
   const paragraphs = useMemo(() => {
     const text = article.content || "";
@@ -83,7 +85,6 @@ export default function NewsDetailClient({ article }: { article: NewsArticle }) 
     const wordCount = paragraphs.join(" ").split(/\s+/).filter(Boolean).length;
     const readingMinutes = Math.max(2, Math.round(wordCount / 180));
 
-    const views = 2_000 + (seed % 128_000);
     const likes = 80 + (seed % 7_500);
     const shares = 10 + (seed % 1_200);
     const commentsCount = 3 + (seed % 140);
@@ -114,7 +115,6 @@ export default function NewsDetailClient({ article }: { article: NewsArticle }) 
     });
 
     return {
-      views,
       likes,
       shares,
       commentsCount,
@@ -191,26 +191,85 @@ export default function NewsDetailClient({ article }: { article: NewsArticle }) 
 
       {/* Hero */}
       <div className="mb-8 overflow-hidden rounded-2xl border border-border bg-card">
-        <div
-          className={`h-48 w-full bg-gradient-to-br ${article.imageGradient} sm:h-64`}
-        />
+        <div className="h-48 w-full sm:h-64">
+          {article.imageUrl ? (
+            <button
+              type="button"
+              onClick={() => setIsImageOpen(true)}
+              className="group block h-full w-full"
+              aria-label="Open image"
+            >
+              <div className="relative h-full w-full">
+                <img
+                  src={article.imageUrl}
+                  alt={article.title}
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-black/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                  Open image
+                </div>
+              </div>
+            </button>
+          ) : (
+            <div
+              className={`h-full w-full bg-gradient-to-br ${article.imageGradient}`}
+            />
+          )}
+        </div>
         <div className="p-5">
           <p className="text-sm leading-relaxed text-text-secondary">
             {article.excerpt}
           </p>
 
           {/* Mock engagement row */}
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-bg px-3 py-1 text-xs font-semibold text-text-secondary">
-              {formatCompactNumber(mock.views)} views
+              Estimated {mock.readingMinutes} min read
             </span>
-            <span className="rounded-full bg-bg px-3 py-1 text-xs font-semibold text-text-secondary">
-              {mock.readingMinutes} min read
+            <span className="rounded-full bg-card px-3 py-1 text-xs font-semibold text-text-secondary">
+              Full story
             </span>
           </div>
         </div>
       </div>
 
+      {isImageOpen && article.imageUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+          <div
+            className="absolute inset-0 bg-black/80"
+            onClick={() => setIsImageOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="relative z-10 max-h-[90vh] max-w-[92vw]">
+            <button
+              type="button"
+              onClick={() => setIsImageOpen(false)}
+              className="absolute -right-3 -top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-black"
+              aria-label="Close image"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M18 6 6 18" />
+                <path d="M6 6l12 12" />
+              </svg>
+            </button>
+            <img
+              src={article.imageUrl}
+              alt={article.title}
+              className="max-h-[90vh] w-auto max-w-[92vw] rounded-2xl object-contain shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
       {/* Content + Ad */}
       <div className="grid gap-8">
         <article className="min-w-0">

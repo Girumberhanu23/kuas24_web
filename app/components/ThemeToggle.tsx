@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useSyncExternalStore } from "react";
 
 type ThemeMode = "light" | "dark";
 
@@ -19,16 +19,39 @@ function setTheme(theme: ThemeMode) {
   document.documentElement.dataset.theme = theme;
   try {
     localStorage.setItem(STORAGE_KEY, theme);
+    window.dispatchEvent(new Event("kuas24-theme"));
   } catch {
     // ignore
   }
 }
 
+function subscribeTheme(callback: () => void) {
+  if (typeof window === "undefined") return () => undefined;
+
+  const handler = () => callback();
+  window.addEventListener("storage", handler);
+  window.addEventListener("kuas24-theme", handler);
+  return () => {
+    window.removeEventListener("storage", handler);
+    window.removeEventListener("kuas24-theme", handler);
+  };
+}
+
+function getThemeSnapshot(): ThemeMode {
+  if (typeof window === "undefined") return "light";
+  return getCurrentTheme();
+}
+
+function getThemeServerSnapshot(): ThemeMode {
+  return "light";
+}
+
 export default function ThemeToggle() {
-  const [theme, setThemeState] = useState<ThemeMode | null>(() => {
-    if (typeof window === "undefined") return null;
-    return getCurrentTheme();
-  });
+  const theme = useSyncExternalStore(
+    subscribeTheme,
+    getThemeSnapshot,
+    getThemeServerSnapshot
+  );
 
   const nextTheme: ThemeMode = theme === "dark" ? "light" : "dark";
 
@@ -38,10 +61,8 @@ export default function ThemeToggle() {
       aria-label={`Switch to ${nextTheme} mode`}
       title={`Switch to ${nextTheme} mode`}
       onClick={() => {
-        const current = theme ?? getCurrentTheme();
-        const updated: ThemeMode = current === "dark" ? "light" : "dark";
+        const updated: ThemeMode = theme === "dark" ? "light" : "dark";
         setTheme(updated);
-        setThemeState(updated);
       }}
       className="flex h-10 w-10 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-card hover:text-text"
     >
