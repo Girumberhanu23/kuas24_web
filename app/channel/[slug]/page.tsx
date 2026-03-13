@@ -1,4 +1,3 @@
-import Link from "next/link";
 import NewsCard from "../../components/NewsCard";
 import { fetchNewsFromApi } from "../../lib/news";
 import { slugify } from "../../lib/slug";
@@ -56,12 +55,6 @@ export default async function ChannelPage({
             <button className="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-hover">
               Follow
             </button>
-            <Link
-              href="/post"
-              className="rounded-xl border border-border px-5 py-2.5 text-sm font-semibold text-text-secondary transition-colors hover:bg-card-hover hover:text-text"
-            >
-              Post News
-            </Link>
           </div>
         </div>
       </div>

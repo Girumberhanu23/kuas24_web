@@ -1,9 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import NewsCard from "./components/NewsCard";
 import SportFilter from "./components/SportFilter";
 import AdCard from "./components/AdCard";
+import {
+  EMPTY_OPTIONS,
+  EMPTY_PREFERENCES,
+  fetchPersonalizationOptions,
+  fetchPersonalizationPreferences,
+  getSelectedInterestNames,
+} from "./lib/personalization";
 import type { NewsArticle } from "./lib/types";
 
 interface HomeClientProps {
@@ -12,6 +20,11 @@ interface HomeClientProps {
 
 export default function HomeClient({ initialNews }: HomeClientProps) {
   const [selectedLeague, setSelectedLeague] = useState("all");
+  const [interestNames, setInterestNames] = useState({
+    leagues: [] as string[],
+    clubs: [] as string[],
+  });
+  const [personalizationReady, setPersonalizationReady] = useState(false);
   const [favorites, setFavorites] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
     try {
@@ -32,10 +45,61 @@ export default function HomeClient({ initialNews }: HomeClientProps) {
     });
   };
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPersonalization = async () => {
+      try {
+        const [options, preferences] = await Promise.all([
+          fetchPersonalizationOptions().catch(() => EMPTY_OPTIONS),
+          fetchPersonalizationPreferences().catch(() => EMPTY_PREFERENCES),
+        ]);
+
+        if (cancelled) return;
+        setInterestNames(getSelectedInterestNames(options, preferences));
+      } finally {
+        if (!cancelled) {
+          setPersonalizationReady(true);
+        }
+      }
+    };
+
+    loadPersonalization();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const preferredLeagues = interestNames.leagues.map((entry) => entry.toLowerCase());
+  const preferredClubs = interestNames.clubs.map((entry) => entry.toLowerCase());
+
+  const getInterestScore = (article: NewsArticle) => {
+    const articleLeague = article.league.toLowerCase();
+    const articleText = `${article.title} ${article.excerpt} ${article.content}`.toLowerCase();
+
+    let score = 0;
+
+    if (preferredLeagues.includes(articleLeague)) {
+      score += 3;
+    }
+
+    if (preferredClubs.some((club) => articleText.includes(club))) {
+      score += 2;
+    }
+
+    return score;
+  };
+
+  const orderedNews =
+    preferredLeagues.length > 0 || preferredClubs.length > 0
+      ? [...initialNews].sort((left, right) => getInterestScore(right) - getInterestScore(left))
+      : initialNews;
+
   const filteredNews =
     selectedLeague === "all"
-      ? initialNews
-      : initialNews.filter((a) => a.league === selectedLeague);
+      ? orderedNews
+      : orderedNews.filter((a) => a.league === selectedLeague);
 
   const featuredArticles = filteredNews.filter((a) => a.featured);
   const regularArticles = filteredNews.filter((a) => !a.featured);
@@ -50,11 +114,46 @@ export default function HomeClient({ initialNews }: HomeClientProps) {
 
       {/* Main Content */}
       <div className="min-w-0">
+        {personalizationReady &&
+          (interestNames.leagues.length > 0 || interestNames.clubs.length > 0) && (
+            <div className="mb-6 rounded-2xl border border-primary/20 bg-primary/10 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-primary">Personalized feed active</p>
+                  <p className="mt-1 text-sm text-text-secondary">
+                    Stories matching your selected leagues and clubs are shown first.
+                  </p>
+                </div>
+                <Link
+                  href="/profile/interests"
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition-colors hover:text-primary-hover"
+                >
+                  Edit interests
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
+                </Link>
+              </div>
+            </div>
+          )}
+
         {/* Featured News */}
         {featuredArticles.length > 0 && (
           <div className="mb-8">
             <h2 className="mb-4 text-lg font-bold text-text">
-              Featured Stories
+              {personalizationReady &&
+              (interestNames.leagues.length > 0 || interestNames.clubs.length > 0)
+                ? "Featured For You"
+                : "Featured Stories"}
             </h2>
             <div className="grid gap-4 sm:grid-cols-2">
               {featuredArticles.map((article) => (
@@ -81,7 +180,12 @@ export default function HomeClient({ initialNews }: HomeClientProps) {
 
         {/* Latest News */}
         <div>
-          <h2 className="mb-4 text-lg font-bold text-text">Latest News</h2>
+          <h2 className="mb-4 text-lg font-bold text-text">
+            {personalizationReady &&
+            (interestNames.leagues.length > 0 || interestNames.clubs.length > 0)
+              ? "More Stories"
+              : "Latest News"}
+          </h2>
           <div className="grid gap-3">
             {regularArticles.length > 0 ? (
               regularArticles.map((article) => (
@@ -136,7 +240,7 @@ export default function HomeClient({ initialNews }: HomeClientProps) {
               Trending
             </h3>
             <div className="grid gap-3">
-              {initialNews.slice(0, 5).map((article, idx) => (
+              {orderedNews.slice(0, 5).map((article, idx) => (
                 <a
                   key={article.id}
                   href={`/news/${article.id}`}

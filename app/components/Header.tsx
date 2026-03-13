@@ -3,17 +3,22 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
+import { useAuth } from "../lib/use-auth";
 
 export default function Header() {
   const pathname = usePathname();
+  const { isBroadcaster } = useAuth();
 
   const navLinks = [
     { href: "/", label: "News" },
     { href: "/fixtures", label: "Fixtures" },
     { href: "/favorites", label: "Favorites" },
-    { href: "/post", label: "Post News" },
     { href: "/profile", label: "Profile" },
   ];
+
+  if (isBroadcaster) {
+    navLinks.splice(3, 0, { href: "/post", label: "Post News" });
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-surface/95 backdrop-blur-md">
