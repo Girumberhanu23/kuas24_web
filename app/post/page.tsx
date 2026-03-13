@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { API_BASE_URL } from "../lib/api";
+import { getAuthHeaderValue } from "../lib/auth";
 import { leagueCategories } from "../lib/data";
+import { useAuth } from "../lib/use-auth";
 
 async function createNewsPost(payload: {
   broadcasterId: string;
@@ -15,10 +18,13 @@ async function createNewsPost(payload: {
   tags: string[];
   isHeadline: boolean;
 }) {
+  const authorization = getAuthHeaderValue();
+
   const response = await fetch(`${API_BASE_URL}createNews`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...(authorization ? { Authorization: authorization } : {}),
     },
     body: JSON.stringify(payload),
   });
@@ -55,13 +61,13 @@ function readFileAsDataUrl(
 }
 
 export default function PostNewsPage() {
+  const { isAuthenticated, isBroadcaster, user } = useAuth();
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("");
   const [league, setLeague] = useState("");
   const [author, setAuthor] = useState("");
-  const [broadcasterId, setBroadcasterId] = useState("");
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [uploadProgress, setUploadProgress] = useState<number[]>([]);
@@ -78,6 +84,10 @@ export default function PostNewsPage() {
     setErrorMessage(null);
 
     try {
+      if (!user?.id) {
+        throw new Error("Missing broadcaster identity. Please login again.");
+      }
+
       const tags = [league].filter(Boolean);
       setUploadProgress(imageFiles.map(() => 0));
       const images = await Promise.all(
@@ -92,7 +102,7 @@ export default function PostNewsPage() {
         )
       );
       await createNewsPost({
-        broadcasterId: broadcasterId.trim(),
+        broadcasterId: user.id,
         title: title.trim(),
         shortSummary: excerpt.trim(),
         fullArticle: content.trim(),
@@ -113,7 +123,6 @@ export default function PostNewsPage() {
         setCategory("");
         setLeague("");
         setAuthor("");
-        setBroadcasterId("");
         setImageFiles([]);
         imagePreviews.forEach((url) => URL.revokeObjectURL(url));
         setImagePreviews([]);
@@ -135,8 +144,34 @@ export default function PostNewsPage() {
     excerpt.trim() &&
     content.trim() &&
     league &&
-    author.trim() &&
-    broadcasterId.trim();
+    author.trim();
+
+  if (!isAuthenticated || !isBroadcaster) {
+    return (
+      <div className="mx-auto max-w-xl rounded-2xl border border-border bg-card p-8 text-center">
+        <h1 className="text-2xl font-bold text-text">Post News</h1>
+        <p className="mt-3 text-sm text-text-secondary">
+          Only broadcaster accounts can create news posts.
+        </p>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          {!isAuthenticated ? (
+            <Link
+              href="/login"
+              className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
+            >
+              Go to Login
+            </Link>
+          ) : null}
+          <Link
+            href="/"
+            className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-text transition-colors hover:bg-card-hover"
+          >
+            Back to Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -244,21 +279,6 @@ export default function PostNewsPage() {
               value={author}
               onChange={(e) => setAuthor(e.target.value)}
               placeholder="Your name or broadcaster handle..."
-              className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-text placeholder-text-secondary outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary"
-              required
-            />
-          </div>
-
-          {/* Broadcaster ID */}
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-text">
-              Broadcaster ID *
-            </label>
-            <input
-              type="text"
-              value={broadcasterId}
-              onChange={(e) => setBroadcasterId(e.target.value)}
-              placeholder="Enter your broadcaster ID"
               className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-text placeholder-text-secondary outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary"
               required
             />

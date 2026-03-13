@@ -33,6 +33,23 @@ export interface LeagueCategory {
   name: string;
 }
 
+export interface PersonalizationOption {
+  id: string;
+  name: string;
+  logo?: string;
+  type: "league" | "club";
+}
+
+export interface PersonalizationOptions {
+  leagues: PersonalizationOption[];
+  clubs: PersonalizationOption[];
+}
+
+export interface PersonalizationPreferences {
+  preferredLeagues: string[];
+  preferredClubs: string[];
+}
+
 /* ------------------------------------------------------------------ */
 /*  Lineup Types                                                       */
 /* ------------------------------------------------------------------ */
