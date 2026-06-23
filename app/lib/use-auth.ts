@@ -11,10 +11,16 @@ import {
 } from "./auth";
 
 export function useAuth() {
-  const [session, setSession] = useState<AuthSession | null>(() => readAuthSession());
+  // Important: don't read from localStorage during the first render.
+  // Client Components can be pre-rendered on the server; reading storage on the
+  // client would cause the initial client render to diverge from the server HTML.
+  const [session, setSession] = useState<AuthSession | null>(null);
 
   useEffect(() => {
     const sync = () => setSession(readAuthSession());
+
+    // Load the session after mount so SSR + first hydration render match.
+    sync();
 
     window.addEventListener("storage", sync);
     window.addEventListener(AUTH_CHANGE_EVENT, sync);

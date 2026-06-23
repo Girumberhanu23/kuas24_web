@@ -20,7 +20,7 @@ type ApiSportsStandingsResponse = {
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const league = url.searchParams.get("league") ?? "39";
-  const season = url.searchParams.get("season") ?? "2024";
+  const season = url.searchParams.get("season") ?? "2026";
 
   const baseUrl = "https://v3.football.api-sports.io";
   const apiKey = process.env.API_SPORTS_KEY?.trim();

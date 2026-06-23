@@ -18,7 +18,7 @@ import LineupPitch from "../../components/LineupPitch";
 type TabId = "summary" | "lineups" | "stats" | "standings";
 
 const LEAGUE_ID = "39";
-const FIXTURES_SEASON = "2023";
+const FIXTURES_SEASON = "2026";
 
 const tabItems: { id: TabId; label: string }[] = [
   { id: "summary", label: "Summary" },
@@ -171,7 +171,7 @@ export default function FixtureDetailPage() {
       setStandingsError(null);
       setStandingsLoading(true);
       try {
-        const seasonsToTry = [FIXTURES_SEASON, "2024"];
+        const seasonsToTry = [FIXTURES_SEASON, "2026"];
         let lastError: string | null = null;
 
         for (const season of seasonsToTry) {
