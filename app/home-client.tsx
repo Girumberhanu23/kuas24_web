@@ -13,6 +13,7 @@ import {
   getSelectedInterestNames,
 } from "./lib/personalization";
 import type { NewsArticle } from "./lib/types";
+import { leagueCategories } from "./lib/data";
 
 interface HomeClientProps {
   initialNews: NewsArticle[];
@@ -108,7 +109,7 @@ export default function HomeClient({ initialNews }: HomeClientProps) {
     <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:gap-8">
       {/* League Filter */}
       <div className="min-w-0">
-        <SportFilter selected={selectedLeague} onSelect={setSelectedLeague} />
+        <SportFilter selected={selectedLeague} onSelect={setSelectedLeague} categories={leagueCategories} />
       </div>
       <div className="hidden xl:block" aria-hidden="true" />
 

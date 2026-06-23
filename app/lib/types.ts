@@ -13,6 +13,8 @@ export interface NewsArticle {
 }
 
 export interface Fixture {
+  leagueId?: string;
+  date?: string;
   id: string;
   league: string;
   leagueLogo?: string;
@@ -31,6 +33,7 @@ export interface Fixture {
 export interface LeagueCategory {
   id: string;
   name: string;
+  logo?: string;
 }
 
 export interface PersonalizationOption {

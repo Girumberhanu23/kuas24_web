@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
 import { useAuth } from "../lib/use-auth";
+import Image from "next/image";
 
 export default function Header() {
   const pathname = usePathname();
@@ -25,26 +26,14 @@ export default function Header() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#ffffff"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-              <path d="M2 12h20" />
-            </svg>
-          </div>
-          <span className="text-xl font-bold tracking-tight">
-            <span className="text-primary">Kuas</span>
-            <span className="text-text">24</span>
-          </span>
+          <Image
+          src="/images/logo.png"
+          alt="Kuas24 Logo"
+          width={160}
+          height={160}
+          priority
+          className="h-14 w-auto"
+          />
         </Link>
 
         {/* Desktop Navigation */}
