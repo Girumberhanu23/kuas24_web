@@ -67,15 +67,14 @@ export default function FixtureDetailPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`/api/fixtures?league=${LEAGUE_ID}&season=${FIXTURES_SEASON}`);
+        const res = await fetch(`/api/fixtures/${encodeURIComponent(fixtureId)}/detail`);
         if (!res.ok) {
           const body = await res.json().catch(() => null);
           throw new Error(body?.error || "Failed to load fixture");
         }
-        const json = (await res.json()) as { fixtures: Fixture[] };
-        const match = (json.fixtures ?? []).find((f) => f.id === fixtureId);
+        const json = (await res.json()) as { fixture: Fixture };
         if (!cancelled) {
-          setFixture(match ?? null);
+          setFixture(json.fixture ?? null);
         }
       } catch (err) {
         if (!cancelled) {
@@ -406,65 +405,91 @@ export default function FixtureDetailPage() {
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-border bg-card">
+        {/* League + time bar */}
         <div className="bg-surface/70 px-5 py-3">
           <div className="flex items-center justify-between text-xs text-text-secondary">
-            <span>{fixture?.league ?? "League"}</span>
-            <span>{fixture?.time ?? "--:--"}</span>
+            <div className="flex items-center gap-1.5">
+              {fixture?.leagueLogo && (
+                <img src={fixture.leagueLogo} alt="" className="h-3.5 w-3.5 object-contain" />
+              )}
+              <span>{fixture?.league ?? "—"}</span>
+            </div>
+            <span className={fixture?.status === "live" ? "font-bold text-live" : ""}>
+              {fixture?.status === "live" ? (fixture.minute ?? "Live") : fixture?.status === "finished" ? "Full Time" : (fixture?.time ?? "—")}
+            </span>
           </div>
         </div>
-        <div className="px-5 py-6">
+
+        {/* Score hero */}
+        <div className="px-5 py-8">
           {loading ? (
-            <p className="text-sm text-text-secondary">Loading fixture details...</p>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col items-center gap-2 flex-1">
+                <div className="h-16 w-16 animate-pulse rounded-full bg-card-hover" />
+                <div className="h-4 w-24 animate-pulse rounded bg-card-hover" />
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <div className="h-10 w-24 animate-pulse rounded bg-card-hover" />
+              </div>
+              <div className="flex flex-col items-center gap-2 flex-1">
+                <div className="h-16 w-16 animate-pulse rounded-full bg-card-hover" />
+                <div className="h-4 w-24 animate-pulse rounded bg-card-hover" />
+              </div>
+            </div>
           ) : fixture ? (
-            <div className="grid items-center gap-6 md:grid-cols-[1fr_auto_1fr]">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between gap-2">
+              {/* Home team */}
+              <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
                 {fixture.homeTeamLogo ? (
-                  <img
-                    src={fixture.homeTeamLogo}
-                    alt={`${fixture.homeTeam} logo`}
-                    className="h-12 w-12 object-contain"
-                  />
+                  <img src={fixture.homeTeamLogo} alt={fixture.homeTeam} className="h-16 w-16 object-contain drop-shadow-sm" />
                 ) : (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface text-xs font-bold text-text-secondary">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-surface text-sm font-bold text-text-secondary">
                     {initials(fixture.homeTeam)}
                   </div>
                 )}
-                <div>
-                  <p className="text-sm font-semibold text-text md:text-base">
-                    {fixture.homeTeam}
-                  </p>
-                  <p className="text-[11px] text-text-secondary">Home</p>
-                </div>
+                <p className="text-center text-sm font-semibold text-text leading-tight line-clamp-2 px-1">
+                  {fixture.homeTeam}
+                </p>
+                <span className="text-[10px] font-medium text-text-secondary uppercase tracking-wider">Home</span>
               </div>
 
-              <div className="flex items-center justify-center gap-3">
-                <span className="text-3xl font-bold text-text">
-                  {fixture.homeScore ?? "-"}
-                </span>
-                <span className="text-sm font-semibold text-text-secondary">-</span>
-                <span className="text-3xl font-bold text-text">
-                  {fixture.awayScore ?? "-"}
-                </span>
+              {/* Score */}
+              <div className="flex flex-col items-center flex-shrink-0 px-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-4xl font-black tabular-nums text-text">
+                    {fixture.homeScore ?? "—"}
+                  </span>
+                  <span className="text-2xl font-light text-text-secondary">:</span>
+                  <span className="text-4xl font-black tabular-nums text-text">
+                    {fixture.awayScore ?? "—"}
+                  </span>
+                </div>
+                {fixture.status === "live" && fixture.minute && (
+                  <span className="mt-1 rounded-full bg-live/15 px-2.5 py-0.5 text-xs font-bold text-live">
+                    {fixture.minute}
+                  </span>
+                )}
+                {fixture.status === "finished" && (
+                  <span className="mt-1 text-xs font-semibold text-text-secondary">FT</span>
+                )}
+                {fixture.status === "upcoming" && (
+                  <span className="mt-1 text-xs font-medium text-text-secondary">{fixture.time}</span>
+                )}
               </div>
 
-              <div className="flex items-center justify-end gap-3">
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-text md:text-base">
-                    {fixture.awayTeam}
-                  </p>
-                  <p className="text-[11px] text-text-secondary">Away</p>
-                </div>
+              {/* Away team */}
+              <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
                 {fixture.awayTeamLogo ? (
-                  <img
-                    src={fixture.awayTeamLogo}
-                    alt={`${fixture.awayTeam} logo`}
-                    className="h-12 w-12 object-contain"
-                  />
+                  <img src={fixture.awayTeamLogo} alt={fixture.awayTeam} className="h-16 w-16 object-contain drop-shadow-sm" />
                 ) : (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface text-xs font-bold text-text-secondary">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-surface text-sm font-bold text-text-secondary">
                     {initials(fixture.awayTeam)}
                   </div>
                 )}
+                <p className="text-center text-sm font-semibold text-text leading-tight line-clamp-2 px-1">
+                  {fixture.awayTeam}
+                </p>
+                <span className="text-[10px] font-medium text-text-secondary uppercase tracking-wider">Away</span>
               </div>
             </div>
           ) : (

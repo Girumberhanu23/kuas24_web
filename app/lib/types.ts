@@ -161,6 +161,7 @@ export interface StandingsResponse {
     flag?: string;
   };
   standings: StandingRow[];
+  groups?: StandingRow[][];
 }
 
 export interface FixtureStatisticItem {
