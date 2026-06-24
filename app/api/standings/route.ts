@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import type { StandingRow } from "../../lib/types";
 
-type ApiSportsStandingRow = StandingRow;
-
 type ApiSportsStandingsResponse = {
   response: Array<{
     league: {
@@ -12,7 +10,7 @@ type ApiSportsStandingsResponse = {
       logo?: string;
       flag?: string;
       season: number;
-      standings: ApiSportsStandingRow[][];
+      standings: StandingRow[][];
     };
   }>;
 };
@@ -26,13 +24,7 @@ export async function GET(req: Request) {
   const apiKey = process.env.API_SPORTS_KEY?.trim();
 
   if (!apiKey) {
-    return NextResponse.json(
-      {
-        error:
-          "Missing API_SPORTS_KEY. Add it to .env.local (server-side only).",
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Missing API_SPORTS_KEY." }, { status: 500 });
   }
 
   const upstream = new URL("/standings", baseUrl);
@@ -40,36 +32,24 @@ export async function GET(req: Request) {
   upstream.searchParams.set("season", season);
 
   const res = await fetch(upstream.toString(), {
-    method: "GET",
-    headers: {
-      "x-apisports-key": apiKey,
-    },
+    headers: { "x-apisports-key": apiKey },
     cache: "no-store",
   });
 
   if (!res.ok) {
     const bodyText = await res.text().catch(() => "");
     return NextResponse.json(
-      {
-        error: "Upstream API-Sports request failed",
-        status: res.status,
-        body: bodyText.slice(0, 2000),
-      },
+      { error: "Upstream API-Sports request failed", status: res.status, body: bodyText.slice(0, 2000) },
       { status: 502 }
     );
   }
 
   const data = (await res.json()) as ApiSportsStandingsResponse;
   const leagueData = data.response?.[0]?.league;
-  const standings = leagueData?.standings?.[0] ?? [];
+  const allGroups = leagueData?.standings ?? [];
 
-  if (!leagueData || !standings.length) {
-    return NextResponse.json(
-      {
-        error: "Standings not available",
-      },
-      { status: 404 }
-    );
+  if (!leagueData || !allGroups.length) {
+    return NextResponse.json({ error: "Standings not available" }, { status: 404 });
   }
 
   return NextResponse.json({
@@ -81,6 +61,7 @@ export async function GET(req: Request) {
       country: leagueData.country,
       flag: leagueData.flag,
     },
-    standings,
+    standings: allGroups[0],      // first group (for single-table leagues)
+    groups: allGroups,             // all groups (for World Cup / group stage)
   });
 }
