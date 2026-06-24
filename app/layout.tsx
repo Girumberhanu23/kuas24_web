@@ -16,9 +16,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Kuas24 - Football News & Fixtures",
+  title: "Kuas24",
   description:
     "Kuas24 brings you football news, fixtures, and live match updates across top leagues.",
+  icons: {
+    icon: "/images/logo.png",
+    apple: "/images/logo.png",
+  },
 };
 
 export default function RootLayout({
