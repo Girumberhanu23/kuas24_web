@@ -9,9 +9,9 @@ function mapStatus(short: string): "live" | "finished" | "upcoming" {
 
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const fixtureId = params.id;
+  const { id: fixtureId } = await params;
   const apiKey = process.env.API_SPORTS_KEY?.trim();
 
   if (!apiKey) {
