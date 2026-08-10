@@ -1,19 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "./components/Header";
 import BottomNav from "./components/BottomNav";
 import Footer from "./components/Footer";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
   title: "Kuas24",
@@ -32,9 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className="antialiased">
         <script
           dangerouslySetInnerHTML={{
             __html: `(() => {
@@ -51,6 +39,7 @@ export default function RootLayout({
           }}
         />
         <Header />
+        <Toaster position="top-right" />
         <main className="mx-auto min-h-screen max-w-7xl px-4 pb-24 pt-4 sm:px-6 sm:pt-6 lg:px-8 md:pb-10">
           {children}
         </main>

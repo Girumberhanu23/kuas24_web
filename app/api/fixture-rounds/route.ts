@@ -9,9 +9,13 @@ function mapStatus(short: string): "live" | "finished" | "upcoming" {
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const league = url.searchParams.get("league") ?? "1";
-  const season = url.searchParams.get("season") ?? "2022";
+  const league = url.searchParams.get("league") ?? process.env.API_SPORTS_DEFAULT_LEAGUE;
+  const season = url.searchParams.get("season") ?? process.env.API_SPORTS_DEFAULT_SEASON ?? String(new Date().getFullYear());
   const round  = url.searchParams.get("round");   // if provided, fetch fixtures for that round
+
+  if (!league) {
+    return NextResponse.json({ error: "Missing league parameter." }, { status: 400 });
+  }
 
   const apiKey = process.env.API_SPORTS_KEY?.trim();
   if (!apiKey) return NextResponse.json({ error: "Missing API_SPORTS_KEY" }, { status: 500 });

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import FixtureCard from "../components/FixtureCard";
+import DateRangePicker from "../components/DateRangePicker";
 import type { Fixture, LeagueCategory } from "../lib/types";
 
 type StatusFilter = "all" | "live" | "upcoming" | "finished";
@@ -42,12 +43,11 @@ function setCachedLeagues(leagues: LeagueCategory[]) {
 export default function FixturesPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
-  const baseDate = useMemo(() => {
-    const d = new Date();
-    d.setFullYear(2026);
-    return d;
-  }, []);
-  const [selectedDate, setSelectedDate] = useState<Date>(baseDate);
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    return date;
+  });
 
   // ── Leagues ──────────────────────────────────────────────────────
   const [leagues, setLeagues] = useState<LeagueCategory[]>([]);
@@ -97,8 +97,9 @@ export default function FixturesPage() {
     (async () => {
       setLoading(true);
       setError(null);
+      const selectedSeason = selectedDate.getFullYear().toString();
       try {
-        const params = new URLSearchParams({ season: "2026", date: toYYYYMMDD(selectedDate) });
+        const params = new URLSearchParams({ season: selectedSeason, date: toYYYYMMDD(selectedDate) });
         if (selectedLeagueId !== "all") params.set("league", selectedLeagueId);
         const res = await fetch(`/api/fixtures?${params}`, { signal: controller.signal });
         if (!res.ok) {
@@ -196,28 +197,13 @@ export default function FixturesPage() {
       </div>
 
       {/* Date Bar */}
-      <div className="mb-6 hide-scrollbar flex gap-2 overflow-x-auto">
-        {[-2, -1, 0, 1, 2, 3, 4].map((offset) => {
-          const date = new Date(baseDate);
-          date.setDate(baseDate.getDate() + offset);
-          const isSelected = toYYYYMMDD(date) === toYYYYMMDD(selectedDate);
-          return (
-            <button
-              key={offset}
-              onClick={() => setSelectedDate(new Date(date))}
-              className={`flex flex-shrink-0 flex-col items-center rounded-lg px-4 py-2 transition-all ${
-                isSelected ? "bg-primary text-white" : "bg-card text-text-secondary hover:bg-card-hover hover:text-text"
-              }`}
-            >
-              <span className="text-[10px] font-medium uppercase">
-                {date.toLocaleDateString("en-US", { weekday: "short" })}
-              </span>
-              <span className="text-sm font-bold">
-                {date.toLocaleDateString("en-US", { day: "numeric", month: "short" })}
-              </span>
-            </button>
-          );
-        })}
+      <div className="mb-6">
+        <DateRangePicker
+          selected={selectedDate}
+          onChange={(date) => {
+            if (date) setSelectedDate(date);
+          }}
+        />
       </div>
 
       {/* Fixtures */}

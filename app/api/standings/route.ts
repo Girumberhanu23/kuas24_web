@@ -17,8 +17,12 @@ type ApiSportsStandingsResponse = {
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const league = url.searchParams.get("league") ?? "39";
-  const season = url.searchParams.get("season") ?? "2026";
+  const league = url.searchParams.get("league") ?? process.env.API_SPORTS_DEFAULT_LEAGUE;
+  const season = url.searchParams.get("season") ?? process.env.API_SPORTS_DEFAULT_SEASON ?? String(new Date().getFullYear());
+
+  if (!league) {
+    return NextResponse.json({ error: "Missing league parameter." }, { status: 400 });
+  }
 
   const baseUrl = "https://v3.football.api-sports.io";
   const apiKey = process.env.API_SPORTS_KEY?.trim();

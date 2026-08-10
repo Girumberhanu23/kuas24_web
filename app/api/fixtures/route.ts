@@ -25,11 +25,31 @@ function mapStatus(short: string): "live" | "finished" | "upcoming" {
   return "upcoming";
 }
 
+async function fetchFixturesFromApiSports(baseUrl: string, apiKey: string, params: URLSearchParams) {
+  const upstream = new URL("/fixtures", baseUrl);
+  params.forEach((value, key) => {
+    upstream.searchParams.set(key, value);
+  });
+
+  const res = await fetch(upstream.toString(), {
+    headers: { "x-apisports-key": apiKey },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const bodyText = await res.text().catch(() => "");
+    throw new Error(bodyText.slice(0, 2000) || `Upstream API-Sports request failed (${res.status})`);
+  }
+
+  return (await res.json()) as ApiSportsFixturesResponse;
+}
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const leagueId = url.searchParams.get("league");   // numeric league id (optional)
-  const season   = url.searchParams.get("season") ?? "2026";
   const date     = url.searchParams.get("date");     // YYYY-MM-DD (optional)
+  const leagueId = url.searchParams.get("league") ?? undefined;
+  const yearFromDate = date ? new Date(date).getFullYear().toString() : null;
+  const season   = url.searchParams.get("season") ?? yearFromDate ?? process.env.API_SPORTS_DEFAULT_SEASON ?? String(new Date().getFullYear());
 
   const baseUrl = process.env.API_SPORTS_BASE_URL?.trim() || "https://v3.football.api-sports.io";
   const apiKey  = process.env.API_SPORTS_KEY?.trim();
@@ -41,55 +61,50 @@ export async function GET(req: Request) {
     );
   }
 
-  // Require at least one filter — the API won't return all fixtures without one
-  if (!leagueId && !date) {
+  try {
+    const primaryParams = new URLSearchParams();
+    primaryParams.set("season", season);
+    if (leagueId) primaryParams.set("league", leagueId);
+    if (date) primaryParams.set("date", date);
+
+    const primaryData = await fetchFixturesFromApiSports(baseUrl, apiKey, primaryParams);
+    const primaryFixtures = (primaryData.response ?? []).map((item) => {
+      const status  = mapStatus(item.fixture.status.short);
+      const elapsed = item.fixture.status.elapsed;
+      const time    = new Date(item.fixture.date).toLocaleTimeString("en-US", {
+        hour: "2-digit", minute: "2-digit",
+      });
+      return {
+        id:            String(item.fixture.id),
+        leagueId:      String(item.league.id),
+        league:        item.league.name,
+        leagueLogo:    item.league.logo,
+        referee:       item.fixture.referee ?? undefined,
+        homeTeam:      item.teams.home.name,
+        homeTeamLogo:  item.teams.home.logo,
+        awayTeam:      item.teams.away.name,
+        awayTeamLogo:  item.teams.away.logo,
+        homeScore:     item.goals.home,
+        awayScore:     item.goals.away,
+        date:          item.fixture.date,
+        time,
+        status,
+        minute: status === "live" && elapsed != null ? `${elapsed}'` : undefined,
+      };
+    });
+
+    if (primaryFixtures.length > 0 || !date) {
+      return NextResponse.json({ fixtures: primaryFixtures });
+    }
+
     return NextResponse.json({ fixtures: [] });
-  }
-
-  const upstream = new URL("/fixtures", baseUrl);
-  upstream.searchParams.set("season", season);
-  if (leagueId) upstream.searchParams.set("league", leagueId);
-  if (date)     upstream.searchParams.set("date", date);
-
-  const res = await fetch(upstream.toString(), {
-    headers: { "x-apisports-key": apiKey },
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    const bodyText = await res.text().catch(() => "");
+  } catch (error) {
     return NextResponse.json(
-      { error: "Upstream API-Sports request failed", status: res.status, body: bodyText.slice(0, 2000) },
+      {
+        error: "Upstream API-Sports request failed",
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 502 }
     );
   }
-
-  const data = (await res.json()) as ApiSportsFixturesResponse;
-
-  const fixtures = (data.response ?? []).map((item) => {
-    const status  = mapStatus(item.fixture.status.short);
-    const elapsed = item.fixture.status.elapsed;
-    const time    = new Date(item.fixture.date).toLocaleTimeString("en-US", {
-      hour: "2-digit", minute: "2-digit",
-    });
-    return {
-      id:            String(item.fixture.id),
-      leagueId:      String(item.league.id),
-      league:        item.league.name,
-      leagueLogo:    item.league.logo,
-      referee:       item.fixture.referee ?? undefined,
-      homeTeam:      item.teams.home.name,
-      homeTeamLogo:  item.teams.home.logo,
-      awayTeam:      item.teams.away.name,
-      awayTeamLogo:  item.teams.away.logo,
-      homeScore:     item.goals.home,
-      awayScore:     item.goals.away,
-      date:          item.fixture.date,
-      time,
-      status,
-      minute: status === "live" && elapsed != null ? `${elapsed}'` : undefined,
-    };
-  });
-
-  return NextResponse.json({ fixtures });
 }
