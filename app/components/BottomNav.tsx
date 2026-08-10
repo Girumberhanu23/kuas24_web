@@ -49,6 +49,24 @@ const navItems = [
     ),
   },
   {
+    href: "/predictor",
+    label: "Predict",
+    icon: (
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M12 2s-6 5.7-6 10.8A6 6 0 0 0 12 19a6 6 0 0 0 6-6.2c0-2.1-1.1-3.7-2.1-4.7.2 1.6-.5 2.7-1.6 2.7-1.3 0-1.6-1.1-1.1-2.2C13.8 6.5 12 2 12 2Z" />
+      </svg>
+    ),
+  },
+  {
     href: "/favorites",
     label: "Favorites",
     icon: (
@@ -94,7 +112,7 @@ export default function BottomNav() {
   const items = [...navItems];
 
   if (isBroadcaster) {
-    items.splice(3, 0, {
+    items.splice(4, 0, {
       href: "/post",
       label: "Post",
       icon: (

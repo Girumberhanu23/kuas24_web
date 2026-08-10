@@ -8,13 +8,15 @@ export async function GET() {
     return NextResponse.json({ error: "Missing API_SPORTS_KEY" }, { status: 500 });
   }
 
+  const season = process.env.API_SPORTS_DEFAULT_SEASON?.trim() || String(new Date().getFullYear());
+
   // Fetch both League and Cup types so World Cup, Champions League etc. are included
   const [leagueRes, cupRes] = await Promise.all([
-    fetch("https://v3.football.api-sports.io/leagues?season=2026&type=League", {
+    fetch(`https://v3.football.api-sports.io/leagues?season=${season}&type=League`, {
       headers: { "x-apisports-key": apiKey },
       next: { revalidate: 86400 },
     }),
-    fetch("https://v3.football.api-sports.io/leagues?season=2026&type=Cup", {
+    fetch(`https://v3.football.api-sports.io/leagues?season=${season}&type=Cup`, {
       headers: { "x-apisports-key": apiKey },
       next: { revalidate: 86400 },
     }),

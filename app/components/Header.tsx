@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
+import GlobalStreakBadge from "./GlobalStreakBadge";
 import { useAuth } from "../lib/use-auth";
 import Image from "next/image";
 
@@ -13,12 +14,13 @@ export default function Header() {
   const navLinks = [
     { href: "/", label: "News" },
     { href: "/fixtures", label: "Fixtures" },
+    { href: "/predictor", label: "Predict" },
     { href: "/favorites", label: "Favorites" },
     { href: "/profile", label: "Profile" },
   ];
 
   if (isBroadcaster) {
-    navLinks.splice(3, 0, { href: "/post", label: "Post News" });
+    navLinks.splice(4, 0, { href: "/post", label: "Post News" });
   }
 
   return (
@@ -60,6 +62,7 @@ export default function Header() {
 
         {/* Search & Actions */}
         <div className="flex items-center gap-3">
+          <GlobalStreakBadge />
           <button className="flex h-10 w-10 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-card hover:text-text">
             <svg
               width="18"
