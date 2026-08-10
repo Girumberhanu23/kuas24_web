@@ -44,10 +44,19 @@ function parseUser(input: unknown): AuthUser | null {
   return { id, phone, role };
 }
 
+function normalizeToken(value: string | null | undefined): string | null {
+  if (typeof value !== "string") return null;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  return trimmed.toLowerCase().startsWith("bearer ") ? trimmed.slice(7).trim() : trimmed;
+}
+
 export function readAuthSession(): AuthSession | null {
   if (!isBrowser()) return null;
 
-  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  const token = normalizeToken(localStorage.getItem(AUTH_TOKEN_KEY));
   const rawUser = localStorage.getItem(AUTH_USER_KEY);
 
   if (!token || !rawUser) return null;
@@ -66,7 +75,10 @@ export function readAuthSession(): AuthSession | null {
 export function setAuthSession(session: AuthSession): void {
   if (!isBrowser()) return;
 
-  localStorage.setItem(AUTH_TOKEN_KEY, session.token);
+  const normalizedToken = normalizeToken(session.token);
+  if (!normalizedToken) return;
+
+  localStorage.setItem(AUTH_TOKEN_KEY, normalizedToken);
   localStorage.setItem(AUTH_USER_KEY, JSON.stringify(session.user));
   emitAuthChange();
 }
@@ -85,7 +97,7 @@ export function setAuthSessionFromRegisterResponse(payload: unknown, phone: stri
   if (!token || !userId || !normalizedPhone) return null;
 
   const session: AuthSession = {
-    token,
+    token: normalizeToken(token) ?? token,
     user: {
       id: userId,
       phone: normalizedPhone,
@@ -106,7 +118,7 @@ export function setAuthSessionFromLoginResponse(payload: unknown): AuthSession |
 
   if (!token || !user) return null;
 
-  const session = { token, user };
+  const session = { token: normalizeToken(token) ?? token, user };
   setAuthSession(session);
   return session;
 }
@@ -123,9 +135,24 @@ export function isBroadcaster(session: AuthSession | null): boolean {
   return session?.user.role === "broadcaster";
 }
 
-export function getAuthHeaderValue(): string | null {
+export function getAuthTokenValue(): string | null {
   const session = readAuthSession();
-  return session?.token ? `Bearer ${session.token}` : null;
+  return session?.token ?? null;
+}
+
+export function getAuthHeaders(): Record<string, string> {
+  const token = getAuthTokenValue();
+  if (!token) return {};
+
+  return {
+    Authorization: `Bearer ${token}`,
+    "x-access-token": token,
+  };
+}
+
+export function getAuthHeaderValue(): string | null {
+  const token = getAuthTokenValue();
+  return token ? `Bearer ${token}` : null;
 }
 
 export { AUTH_CHANGE_EVENT };

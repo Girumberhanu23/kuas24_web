@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { loginUser } from "../lib/auth-api";
@@ -9,6 +9,7 @@ import { setAuthSessionFromLoginResponse } from "../lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +39,8 @@ export default function LoginPage() {
         throw new Error("Login succeeded but session data is incomplete.");
       }
 
-      router.push("/");
+      const nextUrl = searchParams.get("next") ?? "/";
+      router.push(nextUrl);
       router.refresh();
     } catch (requestError) {
       const message =

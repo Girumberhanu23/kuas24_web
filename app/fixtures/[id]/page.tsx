@@ -17,9 +17,6 @@ import LineupPitch from "../../components/LineupPitch";
 
 type TabId = "summary" | "lineups" | "stats" | "standings";
 
-const LEAGUE_ID = "39";
-const FIXTURES_SEASON = "2026";
-
 const tabItems: { id: TabId; label: string }[] = [
   { id: "summary", label: "Summary" },
   { id: "lineups", label: "Lineups" },
@@ -164,17 +161,26 @@ export default function FixtureDetailPage() {
 
   useEffect(() => {
     let cancelled = false;
-    if (activeTab !== "standings") return;
+    if (activeTab !== "standings" || !fixture) return;
+
+    const league = fixture.leagueId ?? searchParams.get("league");
+    const season = searchParams.get("season") || (fixture.date ? new Date(fixture.date).getFullYear().toString() : String(new Date().getFullYear()));
+    if (!league) {
+      setStandingsError("Missing league for standings.");
+      setStandings([]);
+      setStandingsLoading(false);
+      return;
+    }
 
     const loadStandings = async () => {
       setStandingsError(null);
       setStandingsLoading(true);
       try {
-        const seasonsToTry = [FIXTURES_SEASON, "2026"];
+        const seasonsToTry = [season];
         let lastError: string | null = null;
 
-        for (const season of seasonsToTry) {
-          const res = await fetch(`/api/standings?league=${LEAGUE_ID}&season=${season}`);
+        for (const candidateSeason of seasonsToTry) {
+          const res = await fetch(`/api/standings?league=${encodeURIComponent(league)}&season=${encodeURIComponent(candidateSeason)}`);
           if (!res.ok) {
             const body = await res.json().catch(() => null);
             const errorMessage = body?.error || "Failed to load standings";
@@ -212,7 +218,7 @@ export default function FixtureDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [activeTab]);
+  }, [activeTab, fixture, searchParams]);
 
   useEffect(() => {
     let cancelled = false;
