@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
@@ -37,18 +38,20 @@ function OptionCard({
       type="button"
       onClick={() => onToggle(option.id)}
       aria-pressed={selected}
-      className={`group relative flex min-h-28 items-center gap-4 rounded-2xl border p-4 text-left transition-all ${
+      className={`group relative flex min-h-28 items-center gap-3 rounded-2xl border p-3 text-left transition-all ${
         selected
           ? "border-primary bg-primary/10 shadow-[0_18px_40px_-24px_rgba(5,62,255,0.75)]"
           : "border-border bg-card hover:-translate-y-0.5 hover:border-primary/40 hover:bg-card-hover"
       }`}
     >
-      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-surface">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-surface">
         {option.logo ? (
-          <img
+          <Image
             src={option.logo}
             alt={option.name}
-            className="h-full w-full object-contain p-2"
+            width={48}
+            height={48}
+            className="h-full w-full object-contain p-1.5"
           />
         ) : (
           <span className="text-lg font-bold text-primary">
@@ -59,9 +62,9 @@ function OptionCard({
 
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-text sm:text-base">{option.name}</p>
-        <p className="mt-1 text-xs uppercase tracking-[0.24em] text-text-secondary">
+        {/* <p className="mt-1 text-xs uppercase tracking-[0.24em] text-text-secondary">
           {option.type}
-        </p>
+        </p> */}
       </div>
 
       <span
@@ -94,7 +97,7 @@ function LoadingGrid() {
       {Array.from({ length: 6 }).map((_, index) => (
         <div
           key={index}
-          className="h-28 animate-pulse rounded-2xl border border-border bg-card"
+          className="h-24 animate-pulse rounded-2xl border border-border bg-card"
         />
       ))}
     </div>
@@ -118,6 +121,9 @@ export default function InterestsPicker({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [leaguesExpanded, setLeaguesExpanded] = useState(false);
+  const [clubsExpanded, setClubsExpanded] = useState(false);
 
   const selectedCount =
     preferences.preferredLeagues.length + preferences.preferredClubs.length;
@@ -129,11 +135,120 @@ export default function InterestsPicker({
 
     try {
       const [fetchedOptions, fetchedPreferences] = await Promise.all([
-        fetchPersonalizationOptions(),
+        fetchPersonalizationOptions().catch(() => EMPTY_OPTIONS),
         fetchPersonalizationPreferences().catch(() => EMPTY_PREFERENCES),
       ]);
 
-      setOptions(fetchedOptions);
+      // Try to load the same leagues shown on the Fixtures screen
+      let leagueOptions: PersonalizationOptions = fetchedOptions;
+      try {
+        const leaguesRes = await fetch("/api/leagues");
+        if (leaguesRes.ok) {
+          const json = await leaguesRes.json();
+          const rawLeagues: unknown[] = Array.isArray(json.leagues) ? json.leagues : [];
+
+          // Prioritize: UEFA Champions League first, then Premier League (id 39), then England, then Spain, then alphabetically
+          rawLeagues.sort((a: unknown, b: unknown) => {
+            const aRec = a as Record<string, unknown>;
+            const bRec = b as Record<string, unknown>;
+            const aLeagueObj = (aRec['league'] as Record<string, unknown> | undefined) ?? undefined;
+            const bLeagueObj = (bRec['league'] as Record<string, unknown> | undefined) ?? undefined;
+            const aName = String(aRec['name'] ?? aLeagueObj?.['name'] ?? "");
+            const bName = String(bRec['name'] ?? bLeagueObj?.['name'] ?? "");
+            const aId = String(aRec['id'] ?? aLeagueObj?.['id'] ?? "");
+            const bId = String(bRec['id'] ?? bLeagueObj?.['id'] ?? "");
+
+            if (aName === "UEFA Champions League" && bName !== "UEFA Champions League") return -1;
+            if (bName === "UEFA Champions League" && aName !== "UEFA Champions League") return 1;
+
+            if (aId === "39" && bId !== "39") return -1;
+            if (bId === "39" && aId !== "39") return 1;
+
+            const countryPriority = ["England", "Spain"];
+            const aCountry = String(aRec['country'] ?? aLeagueObj?.['country'] ?? "");
+            const bCountry = String(bRec['country'] ?? bLeagueObj?.['country'] ?? "");
+            const ai = countryPriority.indexOf(aCountry);
+            const bi = countryPriority.indexOf(bCountry);
+
+            if (ai !== -1 || bi !== -1) {
+              if (ai === -1) return 1;
+              if (bi === -1) return -1;
+              if (ai !== bi) return ai - bi;
+            }
+
+            return aName.localeCompare(bName);
+          });
+
+          leagueOptions = {
+            ...leagueOptions,
+            leagues: rawLeagues.map((l: unknown): PersonalizationOption => {
+              const rec = l as Record<string, unknown>;
+              const leagueObj = (rec['league'] as Record<string, unknown> | undefined) ?? undefined;
+              const idVal = rec['id'] ?? leagueObj?.['id'];
+              const nameVal = rec['name'] ?? leagueObj?.['name'];
+              const logoVal = rec['logo'] ?? leagueObj?.['logo'];
+              return {
+                id: String(idVal ?? ""),
+                name: String(nameVal ?? ""),
+                logo: (logoVal as string | undefined) ?? undefined,
+                type: "league",
+              };
+            }),
+          };
+        }
+      } catch {
+        // ignore and fall back to fetchedOptions
+      }
+
+      // Try to load clubs (teams) for leagues 39 and 140, merge, dedupe and sort by name
+      let clubs: PersonalizationOptions["clubs"] = leagueOptions.clubs ?? [];
+      try {
+        const targetLeagueIds = ["39", "140"];
+        const season = String(new Date().getFullYear());
+
+        const fetches = targetLeagueIds.map((id) =>
+          fetch(`/api/teams?league=${encodeURIComponent(id)}&season=${encodeURIComponent(season)}`)
+            .then((res) => (res.ok ? res.json().catch(() => null) : null))
+            .catch(() => null)
+        );
+
+        const results: unknown[] = await Promise.all(fetches);
+        const teamsArrays: unknown[] = results.flatMap((r) => {
+          const rObj = r as Record<string, unknown> | undefined;
+          const teamsVal = rObj?.['teams'];
+          return Array.isArray(teamsVal as unknown) ? (teamsVal as unknown[]) : [];
+        });
+
+        const seen = new Set<string>();
+        const merged: PersonalizationOption[] = teamsArrays
+          .map((t: unknown) => {
+            const rec = t as Record<string, unknown>;
+            const teamObj = (rec['team'] as Record<string, unknown> | undefined) ?? undefined;
+            const idVal = rec['id'] ?? teamObj?.['id'];
+            const nameVal = rec['name'] ?? teamObj?.['name'];
+            const logoVal = rec['logo'] ?? teamObj?.['logo'];
+            return {
+              id: String(idVal ?? ""),
+              name: String(nameVal ?? ""),
+              logo: (logoVal as string | undefined) ?? undefined,
+              type: "club",
+            } as PersonalizationOption;
+          })
+          .filter((t) => {
+            if (!t.id) return false;
+            if (seen.has(t.id)) return false;
+            seen.add(t.id);
+            return true;
+          });
+
+        merged.sort((a, b) => a.name.localeCompare(b.name));
+
+        if (merged.length > 0) clubs = merged;
+      } catch {
+        // ignore and keep existing clubs
+      }
+
+      setOptions({ leagues: leagueOptions.leagues ?? [], clubs });
       setPreferences(fetchedPreferences);
     } catch (loadError) {
       setError(
@@ -203,10 +318,33 @@ export default function InterestsPicker({
     }
   };
 
+  const VISIBLE_COUNT = 6;
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredLeagues = normalizedQuery
+    ? options.leagues.filter((o) => o.name.toLowerCase().includes(normalizedQuery))
+    : options.leagues;
+
+  const filteredClubs = normalizedQuery
+    ? options.clubs.filter((o) => o.name.toLowerCase().includes(normalizedQuery))
+    : options.clubs;
+
+  const displayedLeagues = normalizedQuery
+    ? filteredLeagues
+    : leaguesExpanded
+    ? options.leagues
+    : options.leagues.slice(0, VISIBLE_COUNT);
+
+  const displayedClubs = normalizedQuery
+    ? filteredClubs
+    : clubsExpanded
+    ? options.clubs
+    : options.clubs.slice(0, VISIBLE_COUNT);
+
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="relative overflow-hidden rounded-[2rem] border border-border bg-card p-6 shadow-[0_26px_80px_-48px_rgba(11,18,32,0.65)] sm:p-8 lg:p-10">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(5,62,255,0.12),_transparent_38%),radial-gradient(circle_at_bottom_right,_rgba(0,194,255,0.14),_transparent_32%)]" />
+      <div className="relative overflow-hidden rounded-4xl border border-border bg-card p-6 shadow-[0_26px_80px_-48px_rgba(11,18,32,0.65)] sm:p-8 lg:p-10">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(5,62,255,0.12),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(0,194,255,0.14),transparent_32%)]" />
 
         <div className="relative">
           <div className="mb-8 flex flex-col gap-3 border-b border-border/80 pb-6 lg:flex-row lg:items-end lg:justify-between">
@@ -283,7 +421,21 @@ export default function InterestsPicker({
               </button>
             </div>
           ) : (
-            <div className="grid gap-10">
+            <div className="grid gap-8">
+              <div className="mb-2">
+                <input
+                  aria-label="Search leagues and clubs"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    // when user searches, expand both lists so results are visible
+                    setLeaguesExpanded(true);
+                    setClubsExpanded(true);
+                  }}
+                  placeholder="Search leagues and clubs"
+                  className="w-full rounded-full border border-border bg-surface px-4 py-2 text-sm placeholder:text-text-secondary"
+                />
+              </div>
               <section>
                 <div className="mb-4 flex items-center justify-between gap-4">
                   <div>
@@ -298,7 +450,7 @@ export default function InterestsPicker({
                 </div>
 
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {options.leagues.map((option) => (
+                  {displayedLeagues.map((option) => (
                     <OptionCard
                       key={option.id}
                       option={option}
@@ -307,6 +459,18 @@ export default function InterestsPicker({
                     />
                   ))}
                 </div>
+
+                {!normalizedQuery && options.leagues.length > VISIBLE_COUNT && (
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={() => setLeaguesExpanded((s) => !s)}
+                      className="text-sm font-medium text-primary"
+                    >
+                      {leaguesExpanded ? "Show less" : `See all ${options.leagues.length}`}
+                    </button>
+                  </div>
+                )}
               </section>
 
               <section>
@@ -323,7 +487,7 @@ export default function InterestsPicker({
                 </div>
 
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {options.clubs.map((option) => (
+                  {displayedClubs.map((option) => (
                     <OptionCard
                       key={option.id}
                       option={option}
@@ -332,6 +496,18 @@ export default function InterestsPicker({
                     />
                   ))}
                 </div>
+
+                {!normalizedQuery && options.clubs.length > VISIBLE_COUNT && (
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={() => setClubsExpanded((s) => !s)}
+                      className="text-sm font-medium text-primary"
+                    >
+                      {clubsExpanded ? "Show less" : `See all ${options.clubs.length}`}
+                    </button>
+                  </div>
+                )}
               </section>
 
               <div className="flex flex-col gap-4 border-t border-border/80 pt-6 sm:flex-row sm:items-center sm:justify-between">
