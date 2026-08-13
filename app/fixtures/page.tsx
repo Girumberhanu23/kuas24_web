@@ -152,13 +152,13 @@ export default function FixturesPage() {
         <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-2">
           {leaguesLoading
             ? Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-9 w-28 flex-shrink-0 animate-pulse rounded-full bg-card" />
-              ))
+                    <div key={i} className="h-9 w-28 shrink-0 animate-pulse rounded-full bg-card" />
+                  ))
             : leagues.map((cat) => (
                 <button
                   key={cat.id}
-                  onClick={() => setSelectedLeagueId(cat.id)}
-                  className={`flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                      onClick={() => setSelectedLeagueId(cat.id)}
+                      className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all ${
                     selectedLeagueId === cat.id
                       ? "bg-primary text-white"
                       : "bg-card text-text-secondary hover:bg-card-hover hover:text-text"
@@ -172,8 +172,8 @@ export default function FixturesPage() {
                 </button>
               ))}
         </div>
-        <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-bg to-transparent" />
-        <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-bg to-transparent" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-linear-to-r from-bg to-transparent" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-linear-to-l from-bg to-transparent" />
       </div>
 
       {/* Status Tabs */}
