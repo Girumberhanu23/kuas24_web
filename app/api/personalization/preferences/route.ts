@@ -26,9 +26,46 @@ async function proxyPreferencesRequest(request: Request, method: "GET" | "POST")
     };
 
     if (method === "POST") {
-      const body = await request.text();
+      // Parse and re-stringify the JSON body to ensure upstream receives
+      // a proper JSON object (avoids cases where arrays arrive as stringified values).
+      let parsedBody: unknown = undefined;
+      try {
+        parsedBody = await request.json();
+      } catch {
+        // If parsing fails fall back to raw text
+        const raw = await request.text();
+        try {
+          parsedBody = JSON.parse(raw);
+        } catch {
+          parsedBody = raw;
+        }
+      }
+
+      // Normalize selectedLeagues/selectedClubs if they were sent as strings
+      if (parsedBody && typeof parsedBody === "object") {
+        const pb = parsedBody as Record<string, unknown>;
+        for (const key of ["selectedLeagues", "selectedClubs"]) {
+          const val = pb[key];
+          if (typeof val === "string") {
+            // try JSON.parse first (handles '["39","2"]' or "['39','2']")
+            try {
+              pb[key] = JSON.parse(val.replace(/'/g, '"'));
+            } catch {
+              // fallback: extract numbers/words between brackets
+              const matches = val.match(/\d+/g);
+              if (matches) pb[key] = matches.map((m) => String(m));
+              else pb[key] = [];
+            }
+          }
+          // if it's an array, ensure entries are strings
+          if (Array.isArray(pb[key])) {
+            pb[key] = (pb[key] as unknown[]).map((v) => String(v));
+          }
+        }
+      }
+
       headers.set("Content-Type", "application/json");
-      init.body = body;
+      init.body = JSON.stringify(parsedBody);
     }
 
     const upstream = await fetch(`${API_BASE_URL}personalization/preferences`, init);
