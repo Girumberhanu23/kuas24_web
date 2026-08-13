@@ -132,14 +132,60 @@ export default function ProfilePage() {
         </Link>
 
         <div className="pt-2">
-          <button
-            type="button"
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-            className="w-full rounded-full border border-red-500/30 bg-red-500/10 py-3 text-sm font-semibold text-red-200 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {isLoggingOut ? "Logging out..." : "Logout"}
-          </button>
+          {isAuthenticated ? (
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="group w-full rounded-full border border-red-400/30 bg-gradient-to-r from-red-500/10 to-rose-500/10 px-5 py-3 text-sm font-semibold text-red-200 shadow-sm shadow-red-950/20 transition-all duration-200 hover:-translate-y-0.5 hover:border-red-400/50 hover:bg-gradient-to-r hover:from-red-500/20 hover:to-rose-500/20 hover:shadow-md hover:shadow-red-950/30 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              <span className="flex items-center justify-center gap-2">
+                {isLoggingOut ? (
+                  <>
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-200/30 border-t-red-200" />
+                    Logging out...
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l3 3m0 0l-3 3m3-3H3"
+                      />
+                    </svg>
+                    Logout
+                  </>
+                )}
+              </span>
+            </button>
+          ) : (
+            <Link
+              href="/login"
+              className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-primary to-primary-hover px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30 active:translate-y-0"
+            >
+              Sign in
+              <svg
+                className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+                />
+              </svg>
+            </Link>
+          )}
         </div>
       </div>
     </div>
