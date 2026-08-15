@@ -45,7 +45,7 @@ export interface PredictorPrediction {
 
 export interface LeaderboardUserRef {
   id: string;
-  phone: string;
+  phone: string | null;
   email: string | null;
   role: "user" | "broadcaster";
 }

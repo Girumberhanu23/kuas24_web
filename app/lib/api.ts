@@ -1,4 +1,4 @@
-const DEFAULT_API_BASE_URL = "http://localhost:3003";
+const DEFAULT_API_BASE_URL = "http://127.0.0.1:3003";
 
 function normalizeBaseUrl(value: string): string {
 	return value.endsWith("/") ? value : `${value}/`;
