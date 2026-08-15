@@ -37,6 +37,10 @@ export interface PredictorStrings {
   };
   history: {
     empty: string;
+    emptyAll: string;
+    emptyCorrect: string;
+    emptyIncorrect: string;
+    emptyPending: string;
     filterAll: string;
     filterCorrect: string;
     filterIncorrect: string;
@@ -103,6 +107,10 @@ const en: PredictorStrings = {
   },
   history: {
     empty: "You haven't made any predictions yet.",
+    emptyAll: "You haven't made any predictions yet.",
+    emptyCorrect: "You haven't made any correct predictions yet.",
+    emptyIncorrect: "You haven't made any incorrect predictions yet.",
+    emptyPending: "You don't have any pending predictions right now.",
     filterAll: "All",
     filterCorrect: "Correct",
     filterIncorrect: "Incorrect",
@@ -169,6 +177,10 @@ const am: PredictorStrings = {
   },
   history: {
     empty: "እስካሁን ምንም ትንበያ አላደረጉም።",
+    emptyAll: "እስካሁን ምንም ትንበያ አላደረጉም።",
+    emptyCorrect: "እስካሁን ምንም ትክክለኛ ትንበያ አላደረጉም።",
+    emptyIncorrect: "እስካሁን ምንም የተሳሳተ ትንበያ አላደረጉም።",
+    emptyPending: "በአሁኑ ጊዜ ምንም በመጠባበቅ ላይ ያለ ትንበያ የለዎትም።",
     filterAll: "ሁሉም",
     filterCorrect: "ትክክል",
     filterIncorrect: "ስህተት",

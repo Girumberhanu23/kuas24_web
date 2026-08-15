@@ -52,9 +52,14 @@ export async function proxyPredictorRequest(
       },
       { status: upstream.status || 502 }
     );
-  } catch {
+  } catch (error) {
+    console.error("[predictor-proxy] Failed to reach the predictor backend:", error);
     return NextResponse.json(
-      { status: "ERROR", message: "Failed to reach the predictor backend." },
+      {
+        status: "ERROR",
+        message: "Failed to reach the predictor backend.",
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 502 }
     );
   }

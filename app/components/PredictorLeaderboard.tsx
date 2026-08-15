@@ -13,9 +13,16 @@ const POLL_INTERVAL_MS = 60_000;
 const TROPHY_PATH =
   "M6 3h12v4a6 6 0 0 1-6 6 6 6 0 0 1-6-6V3Z M6 5H4a2 2 0 0 0 2 3 M18 5h2a2 2 0 0 1-2 3 M12 13v4 M9 21h6 M10 21v-2a2 2 0 0 1 4 0v2";
 
-function maskPhone(phone: string): string {
+function maskPhone(phone?: string | null): string {
+  if (!phone) return "Unknown";
   if (phone.length <= 4) return phone;
   return `••• ${phone.slice(-4)}`;
+}
+
+function getLeaderboardPlayerLabel(user: LeaderboardEntry["user"]): string {
+  if (user.phone) return maskPhone(user.phone);
+  if (user.email) return user.email;
+  return "Unknown player";
 }
 
 function useDrawCountdownLabel(deadline: string | null): string {
@@ -120,7 +127,7 @@ export default function PredictorLeaderboard({ isAuthenticated, currentUserId }:
     { id: "all_time", label: strings.leaderboard.allTime },
   ];
 
-  const myEntry = currentUserId ? entries.find((e) => e.user.id === currentUserId) : undefined;
+  const myEntry = currentUserId ? entries.find((e) => e.user?.id === currentUserId) : undefined;
   const hasMore = !!pagination && page < pagination.pages;
   const weeklyPeriodEnd = period === "weekly" && entries.length > 0 ? entries[0].periodEnd : null;
   const drawCountdownLabel = useDrawCountdownLabel(weeklyPeriodEnd);
@@ -178,8 +185,11 @@ export default function PredictorLeaderboard({ isAuthenticated, currentUserId }:
           </div>
           <div className="grid gap-0.5">
             {entries.map((entry, i) => {
-              const isMe = entry.user.id === currentUserId;
+              const isMe = entry.user?.id === currentUserId;
               const isWeeklyChampion = period === "weekly" && entry.rank === 1;
+              const avatarText = (entry.user.phone ?? entry.user.email ?? "??").slice(-2).toUpperCase();
+              const playerLabel = getLeaderboardPlayerLabel(entry.user);
+
               return (
                 <div
                   key={entry.id}
@@ -204,9 +214,9 @@ export default function PredictorLeaderboard({ isAuthenticated, currentUserId }:
                   </div>
                   <div className="flex flex-1 min-w-0 items-center gap-2 pl-2">
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-card-hover text-[10px] font-bold text-text-secondary">
-                      {entry.user.phone.slice(-2)}
+                      {avatarText}
                     </div>
-                    <span className="truncate text-sm font-semibold text-text">{maskPhone(entry.user.phone)}</span>
+                    <span className="truncate text-sm font-semibold text-text">{playerLabel}</span>
                   </div>
                   <div className={`w-14 text-center text-sm font-black ${isMe ? "text-primary" : "text-text"}`}>
                     {entry.points}
