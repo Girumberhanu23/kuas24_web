@@ -193,7 +193,7 @@ function mapPrediction(raw: RawPrediction): PredictorPrediction {
 
 interface RawLeaderboardEntry {
   _id: string;
-  userId: { _id: string; phone: string; email: string | null; role: "user" | "broadcaster" };
+  userId: { _id: string; phone?: string | null; email?: string | null; role: "user" | "broadcaster" } | null;
   period: "DAILY" | "WEEKLY" | "ALL_TIME";
   points: number;
   rank: number;
@@ -202,13 +202,20 @@ interface RawLeaderboardEntry {
 }
 
 function mapLeaderboardEntry(raw: RawLeaderboardEntry): LeaderboardEntry {
+  const userInfo = raw.userId ?? {
+    _id: "unknown",
+    phone: null,
+    email: null,
+    role: "user" as const,
+  };
+
   return {
     id: raw._id,
     user: {
-      id: raw.userId._id,
-      phone: raw.userId.phone,
-      email: raw.userId.email,
-      role: raw.userId.role,
+      id: userInfo._id,
+      phone: userInfo.phone ?? null,
+      email: userInfo.email ?? null,
+      role: userInfo.role,
     },
     period: raw.period,
     points: raw.points,

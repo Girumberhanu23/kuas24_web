@@ -81,7 +81,13 @@ function predictionOutcome(prediction: PredictorPrediction): "correct" | "incorr
   return fixture.resolvedResult === prediction.pick ? "correct" : "incorrect";
 }
 
-function PredictionHistoryTab({ isAuthenticated }: { isAuthenticated: boolean }) {
+function PredictionHistoryTab({
+  isAuthenticated,
+  refreshNonce,
+}: {
+  isAuthenticated: boolean;
+  refreshNonce: number;
+}) {
   const strings = usePredictorStrings();
   const [predictions, setPredictions] = useState<PredictorPrediction[]>([]);
   const [pagination, setPagination] = useState<PredictorPagination | null>(null);
@@ -114,7 +120,7 @@ function PredictionHistoryTab({ isAuthenticated }: { isAuthenticated: boolean })
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, refreshNonce]);
 
   const loadMore = async () => {
     if (!pagination || page >= pagination.pages) return;
@@ -145,6 +151,14 @@ function PredictionHistoryTab({ isAuthenticated }: { isAuthenticated: boolean })
 
   const filtered = predictions.filter((p) => filter === "all" || predictionOutcome(p) === filter);
   const hasMore = !!pagination && page < pagination.pages;
+  const emptyMessage =
+    filter === "correct"
+      ? strings.history.emptyCorrect
+      : filter === "incorrect"
+      ? strings.history.emptyIncorrect
+      : filter === "pending"
+      ? strings.history.emptyPending
+      : strings.history.emptyAll;
 
   if (loading) {
     return (
@@ -174,7 +188,7 @@ function PredictionHistoryTab({ isAuthenticated }: { isAuthenticated: boolean })
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState message={strings.history.empty} />
+        <EmptyState message={emptyMessage} />
       ) : (
         <div className="grid gap-2">
           {filtered.map((prediction) => {
@@ -256,6 +270,7 @@ export default function PredictorPage() {
   const [fixtures, setFixtures] = useState<PredictorFixture[]>([]);
   const [fixturesLoading, setFixturesLoading] = useState(true);
   const [fixturesError, setFixturesError] = useState<string | null>(null);
+  const [predictionRefreshNonce, setPredictionRefreshNonce] = useState(0);
 
   const [streak, setStreak] = useState<StreakSummary | null>(null);
   const [streakLoading, setStreakLoading] = useState(true);
@@ -351,6 +366,17 @@ export default function PredictorPage() {
     try {
       const resolvedFixtureId = await resolvePredictorFixtureId(fixtureId);
       await submitPrediction(resolvedFixtureId, pick);
+
+      const [updatedStreak, updatedPredictions] = await Promise.all([
+        fetchMyStreak(),
+        fetchMyPredictions(1, 20),
+      ]);
+
+      setStreak(updatedStreak);
+      setPredictionRefreshNonce((value) => value + 1);
+      if (updatedPredictions.pagination) {
+        // no-op; the history tab refreshes by nonce when the parent re-renders.
+      }
     } catch (e) {
       setFixtures(snapshot);
       showToastError(e instanceof Error ? e.message : strings.fixtures.submitError);
@@ -490,7 +516,9 @@ export default function PredictorPage() {
         </div>
       )}
 
-      {activeTab === "history" && <PredictionHistoryTab isAuthenticated={isAuthenticated} />}
+      {activeTab === "history" && (
+        <PredictionHistoryTab isAuthenticated={isAuthenticated} refreshNonce={predictionRefreshNonce} />
+      )}
 
       {activeTab === "leaderboard" && (
         <PredictorLeaderboard isAuthenticated={isAuthenticated} currentUserId={user?.id ?? null} />
