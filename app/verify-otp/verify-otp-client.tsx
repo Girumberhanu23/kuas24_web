@@ -5,10 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { verifyOtp } from "../lib/auth-api";
+import { useAuthStrings } from "../lib/auth-strings";
 
 export default function VerifyOtpClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const strings = useAuthStrings();
 
   const initialPhone = useMemo(() => {
     const fromQuery = searchParams.get("phone")?.trim();
@@ -30,12 +32,12 @@ export default function VerifyOtpClient() {
     setError(null);
 
     if (!phone.trim()) {
-      setError("Phone number is required.");
+      setError(strings.verify.requiredPhone);
       return;
     }
 
     if (code.trim().length < 4) {
-      setError("OTP code is required.");
+      setError(strings.verify.requiredCode);
       return;
     }
 
@@ -64,32 +66,30 @@ export default function VerifyOtpClient() {
   return (
     <div className="mx-auto flex min-h-[70vh] w-full max-w-md items-center justify-center py-8 sm:py-12">
       <div className="w-full rounded-3xl border border-border bg-card/95 p-6 shadow-[0_30px_90px_-60px_rgba(11,18,32,0.85)] backdrop-blur sm:p-8">
-        <h1 className="text-2xl font-bold text-text">Verify OTP</h1>
-        <p className="mt-2 text-sm text-text-secondary">
-          Enter the verification code sent to your phone.
-        </p>
+        <h1 className="text-2xl font-bold text-text">{strings.verify.title}</h1>
+        <p className="mt-2 text-sm text-text-secondary">{strings.verify.subtitle}</p>
 
         <form className="mt-6 grid gap-4" onSubmit={handleSubmit}>
           <label className="grid gap-2">
-            <span className="text-sm font-medium text-text">Phone Number</span>
+            <span className="text-sm font-medium text-text">{strings.verify.phoneLabel}</span>
             <input
               type="tel"
               autoComplete="tel"
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
-              placeholder="09XXXXXXXX"
+              placeholder={strings.verify.phonePlaceholder}
               className="h-11 rounded-xl border border-border bg-input px-3 text-sm text-text outline-none transition-colors placeholder:text-text-secondary/60 focus:border-primary"
             />
           </label>
 
           <label className="grid gap-2">
-            <span className="text-sm font-medium text-text">OTP Code</span>
+            <span className="text-sm font-medium text-text">{strings.verify.codeLabel}</span>
             <input
               type="text"
               inputMode="numeric"
               value={code}
               onChange={(event) => setCode(event.target.value)}
-              placeholder="6-digit code"
+              placeholder={strings.verify.codePlaceholder}
               className="h-11 rounded-xl border border-border bg-input px-3 text-sm tracking-[0.15em] text-text outline-none transition-colors placeholder:text-text-secondary/60 focus:border-primary"
             />
           </label>
@@ -105,17 +105,17 @@ export default function VerifyOtpClient() {
             disabled={isSubmitting}
             className="mt-2 inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isSubmitting ? "Verifying..." : "Verify OTP"}
+            {isSubmitting ? strings.verify.verifying : strings.verify.button}
           </button>
         </form>
 
         <p className="mt-5 text-sm text-text-secondary">
-          Didn&apos;t receive code? Return to{" "}
+          {strings.verify.returnText}{" "}
           <Link
             href="/forgot-password"
             className="font-medium text-primary hover:text-primary-hover"
           >
-            Forgot Password
+            {strings.verify.forgotPassword}
           </Link>
         </p>
       </div>

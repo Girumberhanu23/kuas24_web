@@ -1,14 +1,20 @@
+"use client";
+
 import Link from "next/link";
 import { Fixture } from "../lib/types";
+import { useDateFormat } from "../lib/date-format";
 
 interface FixtureCardProps {
   fixture: Fixture;
 }
 
 export default function FixtureCard({ fixture }: FixtureCardProps) {
+  const { formatTime } = useDateFormat();
   const isLive = fixture.status === "live";
   const isFinished = fixture.status === "finished";
   const fixtureId = String(fixture.id ?? "").trim();
+  const kickoffTime =
+    fixture.date && !isLive && !isFinished ? formatTime(fixture.date) : fixture.time;
 
   const homeInitials = fixture.homeTeam
     .split(" ")
@@ -27,7 +33,6 @@ export default function FixtureCard({ fixture }: FixtureCardProps) {
       href={`/fixtures/${encodeURIComponent(fixtureId)}`}
       className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 transition-all hover:border-primary/20 hover:bg-card-hover"
     >
-      {/* Status indicator */}
       <div className="flex w-16 shrink-0 flex-col items-center">
         {isLive ? (
           <>
@@ -44,14 +49,12 @@ export default function FixtureCard({ fixture }: FixtureCardProps) {
           </span>
         ) : (
           <span className="text-xs font-medium text-text-secondary">
-            {fixture.time}
+            {kickoffTime}
           </span>
         )}
       </div>
 
-      {/* Teams & Score */}
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        {/* Home team */}
         <div className="flex items-center justify-between">
           <div className="flex min-w-0 items-center gap-2.5">
             {fixture.homeTeamLogo ? (
@@ -89,7 +92,6 @@ export default function FixtureCard({ fixture }: FixtureCardProps) {
           </span>
         </div>
 
-        {/* Away team */}
         <div className="flex items-center justify-between">
           <div className="flex min-w-0 items-center gap-2.5">
             {fixture.awayTeamLogo ? (
