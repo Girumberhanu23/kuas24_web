@@ -18,7 +18,7 @@ function getCurrentLocale(): Locale {
   } catch {
     // ignore
   }
-  return "en";
+  return "am";
 }
 
 export function setLocale(locale: Locale): void {
@@ -42,12 +42,12 @@ function subscribeLocale(callback: () => void) {
 }
 
 function getLocaleSnapshot(): Locale {
-  if (typeof window === "undefined") return "en";
+  if (typeof window === "undefined") return "am";
   return getCurrentLocale();
 }
 
 function getLocaleServerSnapshot(): Locale {
-  return "en";
+  return "am";
 }
 
 export function useLocale(): { locale: Locale; setLocale: (locale: Locale) => void } {

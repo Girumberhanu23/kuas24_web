@@ -11,6 +11,7 @@ import {
   fetchPersonalizationPreferences,
   savePersonalizationPreferences,
 } from "../lib/personalization";
+import { useLocale } from "../lib/locale";
 import type {
   PersonalizationOption,
   PersonalizationOptions,
@@ -112,6 +113,48 @@ export default function InterestsPicker({
 }: InterestsPickerProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { locale } = useLocale();
+  const isAmharic = locale === "am";
+
+  const copy = isAmharic
+    ? {
+        onboarding: "አስተዳደር",
+        profile: "የመገለጫ ፍላጎቶች",
+        searchPlaceholder: "ሊጎችን እና ክለቦችን ይፈልጉ",
+        noInterestsTitle: "ምንም ፍላጎቶች የሉም",
+        noInterestsBody: "በአገልግሎቱ ውስጥ እስካሁን ምንም ሊጎች ወይም ክለቦች አልተመለሱም። አገልግሎቱን እና እባክዎ ይጫኑ።",
+        reloadOptions: "አማራጮችን እንደገና ያስገቡ",
+        leagues: "ሊጎች",
+        leagueSubtitle: "በፍርሃታችሁ ውስጥ የሚፈልጉትን እያንዳንዱ ውድድር ይምረጡ።",
+        selected: "ተመርጧል",
+        seeAll: "ሁሉንም ይመልከቱ",
+        showLess: "ያነሰ ይመልከቱ",
+        all: "ሁሉም",
+        backToProfile: "ወደ መገለጫ ተመለሽ",
+        selectAtLeastOne: "ለመቀጠል ቢያንስ አንድ ሊግ ወይም ክለብ ይምረጡ።",
+        saved: "ፍላጎቶችዎ ተቀምጠዋል።",
+        failedToLoad: "አማራጮችን መጫን አልተቻለም።",
+        failedToSave: "ፍላጎቶችዎን ማስቀመጥ አልተቻለም።",
+      }
+    : {
+        onboarding: "Onboarding",
+        profile: "Profile interests",
+        searchPlaceholder: "Search leagues and clubs",
+        noInterestsTitle: "No interests available",
+        noInterestsBody: "The backend did not return any leagues or clubs yet. Add options on the server, then reload this page.",
+        reloadOptions: "Reload options",
+        leagues: "Leagues",
+        leagueSubtitle: "Choose every competition you want in your feed.",
+        selected: "selected",
+        seeAll: "See all",
+        showLess: "Show less",
+        all: "All",
+        backToProfile: "Back to profile",
+        selectAtLeastOne: "Select at least one league or club to continue.",
+        saved: "Your interests were updated.",
+        failedToLoad: "Failed to load personalization options.",
+        failedToSave: "Failed to save your interests.",
+      };
 
   const [options, setOptions] = useState<PersonalizationOptions>(EMPTY_OPTIONS);
   const [preferences, setPreferences] = useState<PersonalizationPreferences>(
@@ -147,7 +190,7 @@ export default function InterestsPicker({
           const json = await leaguesRes.json();
           const rawLeagues: unknown[] = Array.isArray(json.leagues) ? json.leagues : [];
 
-          // Prioritize: UEFA Champions League first, then Premier League (id 39), then England, then Spain, then alphabetically
+          // Prioritize: Premier League (id 39) first, then UEFA Champions League, then England, then Spain, then alphabetically
           rawLeagues.sort((a: unknown, b: unknown) => {
             const aRec = a as Record<string, unknown>;
             const bRec = b as Record<string, unknown>;
@@ -158,11 +201,11 @@ export default function InterestsPicker({
             const aId = String(aRec['id'] ?? aLeagueObj?.['id'] ?? "");
             const bId = String(bRec['id'] ?? bLeagueObj?.['id'] ?? "");
 
-            if (aName === "UEFA Champions League" && bName !== "UEFA Champions League") return -1;
-            if (bName === "UEFA Champions League" && aName !== "UEFA Champions League") return 1;
-
             if (aId === "39" && bId !== "39") return -1;
             if (bId === "39" && aId !== "39") return 1;
+
+            if (aName === "UEFA Champions League" && bName !== "UEFA Champions League") return -1;
+            if (bName === "UEFA Champions League" && aName !== "UEFA Champions League") return 1;
 
             const countryPriority = ["England", "Spain"];
             const aCountry = String(aRec['country'] ?? aLeagueObj?.['country'] ?? "");
@@ -254,7 +297,7 @@ export default function InterestsPicker({
       setError(
         loadError instanceof Error
           ? loadError.message
-          : "Failed to load personalization options."
+          : copy.failedToLoad
       );
     } finally {
       setLoading(false);
@@ -287,7 +330,7 @@ export default function InterestsPicker({
 
   const handleSubmit = async () => {
     if (selectedCount === 0) {
-      setError("Select at least one league or club to continue.");
+      setError(copy.selectAtLeastOne);
       return;
     }
 
@@ -305,13 +348,13 @@ export default function InterestsPicker({
         return;
       }
 
-      setSuccessMessage("Your interests were updated.");
+      setSuccessMessage(copy.saved);
       router.refresh();
     } catch (saveError) {
       setError(
         saveError instanceof Error
           ? saveError.message
-          : "Failed to save your interests."
+          : copy.failedToSave
       );
     } finally {
       setSaving(false);
@@ -350,7 +393,7 @@ export default function InterestsPicker({
           <div className="mb-8 flex flex-col gap-3 border-b border-border/80 pb-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-[0.32em] text-primary">
-                {mode === "onboarding" ? "Onboarding" : "Profile interests"}
+                {mode === "onboarding" ? copy.onboarding : copy.profile}
               </p>
               <h1 className="max-w-3xl text-3xl font-bold tracking-tight text-text sm:text-4xl">
                 {title}
@@ -377,7 +420,7 @@ export default function InterestsPicker({
                 >
                   <path d="m15 18-6-6 6-6" />
                 </svg>
-                Back to profile
+                {copy.backToProfile}
               </Link>
             )}
           </div>
@@ -407,24 +450,23 @@ export default function InterestsPicker({
             </div>
           ) : !hasOptions ? (
             <div className="rounded-3xl border border-dashed border-border bg-surface px-6 py-16 text-center">
-              <h2 className="text-xl font-semibold text-text">No interests available</h2>
+              <h2 className="text-xl font-semibold text-text">{copy.noInterestsTitle}</h2>
               <p className="mx-auto mt-3 max-w-lg text-sm text-text-secondary">
-                The backend did not return any leagues or clubs yet. Add options on the
-                server, then reload this page.
+                {copy.noInterestsBody}
               </p>
               <button
                 type="button"
                 onClick={loadPersonalization}
                 className="mt-6 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
               >
-                Reload options
+                {copy.reloadOptions}
               </button>
             </div>
           ) : (
             <div className="grid gap-8">
               <div className="mb-2">
                 <input
-                  aria-label="Search leagues and clubs"
+                  aria-label={copy.searchPlaceholder}
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -432,20 +474,20 @@ export default function InterestsPicker({
                     setLeaguesExpanded(true);
                     setClubsExpanded(true);
                   }}
-                  placeholder="Search leagues and clubs"
+                  placeholder={copy.searchPlaceholder}
                   className="w-full rounded-full border border-border bg-surface px-4 py-2 text-sm placeholder:text-text-secondary"
                 />
               </div>
               <section>
                 <div className="mb-4 flex items-center justify-between gap-4">
                   <div>
-                    <h2 className="text-xl font-semibold text-text">Leagues</h2>
+                    <h2 className="text-xl font-semibold text-text">{copy.leagues}</h2>
                     <p className="mt-1 text-sm text-text-secondary">
-                      Choose every competition you want in your feed.
+                      {copy.leagueSubtitle}
                     </p>
                   </div>
                   <span className="rounded-full bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-text-secondary">
-                    {preferences.preferredLeagues.length} selected
+                    {preferences.preferredLeagues.length} {copy.selected}
                   </span>
                 </div>
 
@@ -467,7 +509,7 @@ export default function InterestsPicker({
                       onClick={() => setLeaguesExpanded((s) => !s)}
                       className="text-sm font-medium text-primary"
                     >
-                      {leaguesExpanded ? "Show less" : `See all ${options.leagues.length}`}
+                      {leaguesExpanded ? copy.showLess : `${copy.seeAll} ${options.leagues.length}`}
                     </button>
                   </div>
                 )}
@@ -504,7 +546,7 @@ export default function InterestsPicker({
                       onClick={() => setClubsExpanded((s) => !s)}
                       className="text-sm font-medium text-primary"
                     >
-                      {clubsExpanded ? "Show less" : `See all ${options.clubs.length}`}
+                      {clubsExpanded ? copy.showLess : `${copy.seeAll} ${options.clubs.length}`}
                     </button>
                   </div>
                 )}

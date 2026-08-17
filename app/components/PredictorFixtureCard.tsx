@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePredictorStrings } from "../lib/predictor-strings";
+import { useDateFormat } from "../lib/date-format";
 import type { PredictorFixture, PredictorPick } from "../lib/predictor-types";
 
 interface PredictorFixtureCardProps {
@@ -28,6 +29,7 @@ export default function PredictorFixtureCard({
   onNeedLogin,
 }: PredictorFixtureCardProps) {
   const strings = usePredictorStrings();
+  const { formatDate, formatTime } = useDateFormat();
   // const router = useRouter();
 
   const kickoffDate = new Date(fixture.kickoff);
@@ -43,8 +45,8 @@ export default function PredictorFixtureCard({
     return () => clearInterval(interval);
   }, [kickoffMs]);
 
-  const dateLabel = kickoffDate.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
-  const timeLabel = kickoffDate.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  const dateLabel = formatDate(kickoffDate, "medium");
+  const timeLabel = formatTime(kickoffDate);
 
   const handlePick = (pick: PredictorPick) => {
     if (isLocked || isSubmitting) return;

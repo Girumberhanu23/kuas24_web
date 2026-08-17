@@ -53,7 +53,7 @@ export async function proxyPredictorRequest(
       { status: upstream.status || 502 }
     );
   } catch (error) {
-    console.error("[predictor-proxy] Failed to reach the predictor backend:", error);
+    console.warn("[predictor-proxy] Failed to reach the predictor backend:", error instanceof Error ? error.message : String(error));
     return NextResponse.json(
       {
         status: "ERROR",

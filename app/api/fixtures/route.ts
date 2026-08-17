@@ -1,5 +1,10 @@
 // app/api/fixtures/route.ts
 import { NextResponse } from "next/server";
+import {
+  FEATURED_LEAGUE_IDS,
+  getLeagueSortIndex,
+  isFeaturedLeagueId,
+} from "../../lib/leagues";
 
 type ApiSportsFixturesResponse = {
   response: Array<{
@@ -44,15 +49,46 @@ async function fetchFixturesFromApiSports(baseUrl: string, apiKey: string, param
   return (await res.json()) as ApiSportsFixturesResponse;
 }
 
+function mapFixtureItem(item: ApiSportsFixturesResponse["response"][number]) {
+  const status = mapStatus(item.fixture.status.short);
+  const elapsed = item.fixture.status.elapsed;
+  const time = new Date(item.fixture.date).toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return {
+    id: String(item.fixture.id),
+    leagueId: String(item.league.id),
+    league: item.league.name,
+    leagueLogo: item.league.logo,
+    referee: item.fixture.referee ?? undefined,
+    homeTeam: item.teams.home.name,
+    homeTeamLogo: item.teams.home.logo,
+    awayTeam: item.teams.away.name,
+    awayTeamLogo: item.teams.away.logo,
+    homeScore: item.goals.home,
+    awayScore: item.goals.away,
+    date: item.fixture.date,
+    time,
+    status,
+    minute: status === "live" && elapsed != null ? `${elapsed}'` : undefined,
+  };
+}
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const date     = url.searchParams.get("date");     // YYYY-MM-DD (optional)
+  const date = url.searchParams.get("date"); // YYYY-MM-DD (optional)
   const leagueId = url.searchParams.get("league") ?? undefined;
   const yearFromDate = date ? new Date(date).getFullYear().toString() : null;
-  const season   = url.searchParams.get("season") ?? yearFromDate ?? process.env.API_SPORTS_DEFAULT_SEASON ?? String(new Date().getFullYear());
+  const season =
+    url.searchParams.get("season") ??
+    yearFromDate ??
+    process.env.API_SPORTS_DEFAULT_SEASON ??
+    String(new Date().getFullYear());
 
   const baseUrl = process.env.API_SPORTS_BASE_URL?.trim() || "https://v3.football.api-sports.io";
-  const apiKey  = process.env.API_SPORTS_KEY?.trim();
+  const apiKey = process.env.API_SPORTS_KEY?.trim();
 
   if (!apiKey) {
     return NextResponse.json(
@@ -61,43 +97,40 @@ export async function GET(req: Request) {
     );
   }
 
-  try {
-    const primaryParams = new URLSearchParams();
-    primaryParams.set("season", season);
-    if (leagueId) primaryParams.set("league", leagueId);
-    if (date) primaryParams.set("date", date);
+  if (leagueId && !isFeaturedLeagueId(leagueId)) {
+    return NextResponse.json({ fixtures: [] });
+  }
 
-    const primaryData = await fetchFixturesFromApiSports(baseUrl, apiKey, primaryParams);
-    const primaryFixtures = (primaryData.response ?? []).map((item) => {
-      const status  = mapStatus(item.fixture.status.short);
-      const elapsed = item.fixture.status.elapsed;
-      const time    = new Date(item.fixture.date).toLocaleTimeString("en-US", {
-        hour: "2-digit", minute: "2-digit",
-      });
-      return {
-        id:            String(item.fixture.id),
-        leagueId:      String(item.league.id),
-        league:        item.league.name,
-        leagueLogo:    item.league.logo,
-        referee:       item.fixture.referee ?? undefined,
-        homeTeam:      item.teams.home.name,
-        homeTeamLogo:  item.teams.home.logo,
-        awayTeam:      item.teams.away.name,
-        awayTeamLogo:  item.teams.away.logo,
-        homeScore:     item.goals.home,
-        awayScore:     item.goals.away,
-        date:          item.fixture.date,
-        time,
-        status,
-        minute: status === "live" && elapsed != null ? `${elapsed}'` : undefined,
-      };
+  const leaguesToFetch = leagueId ? [leagueId] : FEATURED_LEAGUE_IDS;
+
+  try {
+    const responses = await Promise.all(
+      leaguesToFetch.map(async (id) => {
+        const params = new URLSearchParams();
+        params.set("season", season);
+        params.set("league", id);
+        if (date) params.set("date", date);
+        const data = await fetchFixturesFromApiSports(baseUrl, apiKey, params);
+        return data.response ?? [];
+      })
+    );
+
+    const seen = new Set<number>();
+    const items = responses.flat().filter((item) => {
+      if (seen.has(item.fixture.id)) return false;
+      seen.add(item.fixture.id);
+      return isFeaturedLeagueId(item.league.id);
     });
 
-    if (primaryFixtures.length > 0 || !date) {
-      return NextResponse.json({ fixtures: primaryFixtures });
-    }
+    const fixtures = items
+      .map(mapFixtureItem)
+      .sort((a, b) => {
+        const byLeague = getLeagueSortIndex(a.leagueId) - getLeagueSortIndex(b.leagueId);
+        if (byLeague !== 0) return byLeague;
+        return new Date(a.date ?? 0).getTime() - new Date(b.date ?? 0).getTime();
+      });
 
-    return NextResponse.json({ fixtures: [] });
+    return NextResponse.json({ fixtures });
   } catch (error) {
     return NextResponse.json(
       {

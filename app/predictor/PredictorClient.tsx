@@ -24,6 +24,8 @@ import PredictorStreakCard from "../components/PredictorStreakCard";
 import PredictorFixtureCard from "../components/PredictorFixtureCard";
 import PredictorLeaderboard from "../components/PredictorLeaderboard";
 import LocaleToggle from "../components/LocaleToggle";
+import { useDateFormat } from "../lib/date-format";
+import { getLeagueSortIndex } from "../lib/leagues";
 
 const POLL_INTERVAL_MS = 60_000;
 
@@ -89,6 +91,7 @@ function PredictionHistoryTab({
   refreshNonce: number;
 }) {
   const strings = usePredictorStrings();
+  const { formatDate } = useDateFormat();
   const [predictions, setPredictions] = useState<PredictorPrediction[]>([]);
   const [pagination, setPagination] = useState<PredictorPagination | null>(null);
   const [page, setPage] = useState(1);
@@ -218,10 +221,7 @@ function PredictionHistoryTab({
                       <p className="mt-0.5 text-xs text-text-secondary">
                         {fixture.homeScore !== null && fixture.awayScore !== null
                           ? `${fixture.homeScore} - ${fixture.awayScore}`
-                          : new Date(fixture.kickoff).toLocaleDateString(undefined, {
-                              day: "numeric",
-                              month: "short",
-                            })}
+                          : formatDate(fixture.kickoff, "dayMonth")}
                       </p>
                     )}
                   </div>
@@ -409,7 +409,21 @@ export default function PredictorPage() {
       if (!m[key]) m[key] = [];
       m[key].push(f);
     }
-    return m;
+
+    return Object.fromEntries(
+      Object.entries(m).sort(([leagueA, fixturesA], [leagueB, fixturesB]) => {
+        const leagueIdA = String(fixturesA[0]?.league?.id ?? "");
+        const leagueIdB = String(fixturesB[0]?.league?.id ?? "");
+        const nameA = fixturesA[0]?.league?.name ?? leagueA;
+        const nameB = fixturesB[0]?.league?.name ?? leagueB;
+
+        if (leagueIdA === "39" && leagueIdB !== "39") return -1;
+        if (leagueIdB === "39" && leagueIdA !== "39") return 1;
+
+        const sortedByPriority = getLeagueSortIndex(leagueIdA) - getLeagueSortIndex(leagueIdB);
+        return sortedByPriority !== 0 ? sortedByPriority : nameA.localeCompare(nameB);
+      })
+    );
   }, [filteredFixtures]);
 
   return (
@@ -465,12 +479,12 @@ export default function PredictorPage() {
           </div>
           <div className="mb-6 flex justify-end">
             <div className="w-full max-w-md rounded-3xl border border-border bg-surface px-4 py-3">
-              <label htmlFor="predictor-search" className="sr-only">Search fixtures</label>
+              <label htmlFor="predictor-search" className="sr-only">{strings.fixtures.searchPlaceholder}</label>
               <input
                 id="predictor-search"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search team or league"
+                placeholder={strings.fixtures.searchPlaceholder}
                 className="w-full bg-transparent text-sm text-text placeholder:text-text-secondary focus:outline-none"
               />
             </div>

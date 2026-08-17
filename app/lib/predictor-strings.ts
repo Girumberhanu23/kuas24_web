@@ -27,6 +27,7 @@ export interface PredictorStrings {
   fixtures: {
     empty: string;
     windowNote: string;
+    searchPlaceholder: string;
     pickHome: string;
     pickDraw: string;
     pickAway: string;
@@ -97,6 +98,7 @@ const en: PredictorStrings = {
   fixtures: {
     empty: "No fixtures available in the next 72 hours. Check back soon.",
     windowNote: "Showing fixtures kicking off in the next 72 hours",
+    searchPlaceholder: "Search team or league",
     pickHome: "Home",
     pickDraw: "Draw",
     pickAway: "Away",
@@ -166,7 +168,8 @@ const am: PredictorStrings = {
   },
   fixtures: {
     empty: "በሚቀጥሉት 72 ሰዓታት ውስጥ ምንም ግጥሚያዎች የሉም። እባክዎ ቆይተው ይመልከቱ።",
-    windowNote: "በሚቀጥሉት 72 ሰዓታት ውስጥ የሚጀምሩ ግጥሚያዎችን በማሳየት ላይ",
+    windowNote: "በሚቀጥሉት 72 ሰዓታት ውስጥ የሚጀምሩ ግጥሚያዎች",
+    searchPlaceholder: "ቡድን ወይም ሊግ ይፈልጉ",
     pickHome: "አስተናጋጅ",
     pickDraw: "አቻ",
     pickAway: "እንግዳ",
