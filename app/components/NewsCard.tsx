@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { KeyboardEventHandler } from "react";
 import { slugify } from "../lib/slug";
 import type { NewsArticle } from "../lib/types";
+import { useDateFormat } from "../lib/date-format";
 
 interface NewsCardProps {
   article: NewsArticle;
@@ -19,6 +20,7 @@ export default function NewsCard({
   isFavorite = false,
   onToggleFavorite,
 }: NewsCardProps) {
+  const { formatDate } = useDateFormat();
   const router = useRouter();
   const channelHref = `/channel/${encodeURIComponent(slugify(article.author))}`;
   const detailHref = `/news/${article.id}`;
@@ -113,11 +115,7 @@ export default function NewsCard({
             </div>
             <span className="text-border">•</span>
             <span>
-              {new Date(article.date).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })}
+              {formatDate(article.date, "short")}
             </span>
           </div>
         </div>
@@ -169,10 +167,7 @@ export default function NewsCard({
             </Link>
             <span className="text-border">•</span>
             <span>
-              {new Date(article.date).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-              })}
+              {formatDate(article.date, "short")}
             </span>
           </div>
           {onToggleFavorite && (

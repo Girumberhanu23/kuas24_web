@@ -1,4 +1,5 @@
 import { getAuthHeaders } from "./auth";
+import { getLeagueSortIndex } from "./leagues";
 import type {
   LeaderboardEntry,
   LeaderboardPeriod,
@@ -272,7 +273,10 @@ export async function fetchPredictorFixtures(options?: {
       return data.fixtures.map(mapFixture);
     }
   } catch (error) {
-    console.error("[Predictor API] Predictor fixtures request failed:", error);
+    console.warn(
+      "[Predictor API] Predictor fixtures request failed, using public fixtures fallback:",
+      error instanceof Error ? error.message : error
+    );
   }
 
   const endpoint = queryString
@@ -304,9 +308,13 @@ export async function fetchPredictorFixtures(options?: {
       fixtures: payload.fixtures,
     });
 
-    return (payload.fixtures ?? []).map((item, index) =>
-      mapApiSportsFixture(item, index)
-    );
+    return (payload.fixtures ?? [])
+      .map((item, index) => mapApiSportsFixture(item, index))
+      .sort((a, b) => {
+        const byLeague = getLeagueSortIndex(a.league.id) - getLeagueSortIndex(b.league.id);
+        if (byLeague !== 0) return byLeague;
+        return new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime();
+      });
   } catch (error) {
     console.error("[Predictor API] Fallback fixtures request failed:", error);
     return [];

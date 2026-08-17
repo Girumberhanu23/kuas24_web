@@ -5,10 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { resetPassword } from "../lib/auth-api";
+import { useAuthStrings } from "../lib/auth-strings";
 
 export default function ResetPasswordClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const strings = useAuthStrings();
 
   const initialPhone = useMemo(() => {
     const fromQuery = searchParams.get("phone")?.trim();
@@ -35,17 +37,17 @@ export default function ResetPasswordClient() {
     setError(null);
 
     if (!phone.trim()) {
-      setError("Phone number is required.");
+      setError(strings.reset.requiredPhone);
       return;
     }
 
     if (!code.trim()) {
-      setError("Verification code is required.");
+      setError(strings.reset.requiredCode);
       return;
     }
 
     if (newPassword.length < 8) {
-      setError("New password must be at least 8 characters.");
+      setError(strings.reset.passwordLength);
       return;
     }
 
@@ -60,7 +62,7 @@ export default function ResetPasswordClient() {
       const message =
         requestError instanceof Error
           ? requestError.message
-          : "Unable to reset password right now.";
+          : strings.reset.resetError;
       setError(message);
     } finally {
       setIsSubmitting(false);
@@ -70,44 +72,42 @@ export default function ResetPasswordClient() {
   return (
     <div className="mx-auto flex min-h-[70vh] w-full max-w-md items-center justify-center py-8 sm:py-12">
       <div className="w-full rounded-3xl border border-border bg-card/95 p-6 shadow-[0_30px_90px_-60px_rgba(11,18,32,0.85)] backdrop-blur sm:p-8">
-        <h1 className="text-2xl font-bold text-text">Reset password</h1>
-        <p className="mt-2 text-sm text-text-secondary">
-          Create a new password for your account.
-        </p>
+        <h1 className="text-2xl font-bold text-text">{strings.reset.title}</h1>
+        <p className="mt-2 text-sm text-text-secondary">{strings.reset.subtitle}</p>
 
         <form className="mt-6 grid gap-4" onSubmit={handleSubmit}>
           <label className="grid gap-2">
-            <span className="text-sm font-medium text-text">Phone Number</span>
+            <span className="text-sm font-medium text-text">{strings.reset.phoneLabel}</span>
             <input
               type="tel"
               autoComplete="tel"
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
-              placeholder="09XXXXXXXX"
+              placeholder={strings.reset.phonePlaceholder}
               className="h-11 rounded-xl border border-border bg-input px-3 text-sm text-text outline-none transition-colors placeholder:text-text-secondary/60 focus:border-primary"
             />
           </label>
 
           <label className="grid gap-2">
-            <span className="text-sm font-medium text-text">Verification Code</span>
+            <span className="text-sm font-medium text-text">{strings.reset.codeLabel}</span>
             <input
               type="text"
               inputMode="numeric"
               value={code}
               onChange={(event) => setCode(event.target.value)}
-              placeholder="OTP code"
+              placeholder={strings.reset.codePlaceholder}
               className="h-11 rounded-xl border border-border bg-input px-3 text-sm text-text outline-none transition-colors placeholder:text-text-secondary/60 focus:border-primary"
             />
           </label>
 
           <label className="grid gap-2">
-            <span className="text-sm font-medium text-text">New Password</span>
+            <span className="text-sm font-medium text-text">{strings.reset.passwordLabel}</span>
             <input
               type="password"
               autoComplete="new-password"
               value={newPassword}
               onChange={(event) => setNewPassword(event.target.value)}
-              placeholder="At least 8 characters"
+              placeholder={strings.reset.passwordPlaceholder}
               className="h-11 rounded-xl border border-border bg-input px-3 text-sm text-text outline-none transition-colors placeholder:text-text-secondary/60 focus:border-primary"
             />
           </label>
@@ -123,17 +123,17 @@ export default function ResetPasswordClient() {
             disabled={isSubmitting}
             className="mt-2 inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isSubmitting ? "Updating password..." : "Reset Password"}
+            {isSubmitting ? strings.reset.submitting : strings.reset.button}
           </button>
         </form>
 
         <p className="mt-5 text-sm text-text-secondary">
-          Return to{" "}
+          {strings.reset.returnTo}{" "}
           <Link
             href="/login"
             className="font-medium text-primary hover:text-primary-hover"
           >
-            Login
+            {strings.reset.login}
           </Link>
         </p>
       </div>

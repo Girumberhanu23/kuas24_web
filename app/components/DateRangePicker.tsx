@@ -2,28 +2,21 @@
 
 import type { KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { formatRelativeDayLabel } from "../lib/date-format";
+import { useDateFormat } from "../lib/date-format";
+import { useNavStrings } from "../lib/nav-strings";
+import { ETH_WEEKDAYS_AM } from "../lib/ethiopian-date";
 
 function pad2(n: number) {
   return String(n).padStart(2, "0");
 }
 
-function formatDate(date: Date) {
+function formatGregorianKey(date: Date) {
   return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
 }
 
 function sameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-}
-
-function getDateLabel(date: Date) {
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
-function getRelativeDateLabel(date: Date, today: Date) {
-  if (sameDay(date, today)) return "Today";
-  if (sameDay(date, new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1))) return "Yesterday";
-  if (sameDay(date, new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1))) return "Tomorrow";
-  return date.toLocaleDateString("en-US", { weekday: "short" });
 }
 
 interface DateRangePickerProps {
@@ -41,6 +34,8 @@ export default function DateRangePicker({
   rangeAfter = 7,
   showAllOption = false,
 }: DateRangePickerProps) {
+  const strings = useNavStrings();
+  const { locale, formatDate, calendarDay } = useDateFormat();
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -65,7 +60,7 @@ export default function DateRangePicker({
     });
   }, [today, rangeBefore, rangeAfter]);
 
-  const selectedKey = selected ? formatDate(selected) : null;
+  const selectedKey = selected ? formatGregorianKey(selected) : null;
 
   useEffect(() => {
     if (!scrollRef.current || !selectedKey) return;
@@ -142,12 +137,12 @@ export default function DateRangePicker({
             role="listbox"
             aria-label="Fixture date picker"
             onKeyDown={handleScrollKeyDown}
-            className="hide-scrollbar flex w-full flex-nowrap gap-2 overflow-x-auto rounded-3xl border border-border bg-surface px-2 py-2"
+            className="hide-scrollbar flex w-full flex-nowrap gap-1.5 overflow-x-auto rounded-3xl border border-border bg-surface px-1.5 py-1.5 sm:gap-2 sm:px-2 sm:py-2"
           >
             <button
               type="button"
               onClick={() => setShowCalendar((current) => !current)}
-              className="snap-center flex min-w-17 items-center justify-center rounded-2xl border border-border bg-card text-text-secondary transition-colors hover:bg-card-hover hover:text-text focus:outline-none focus:ring-2 focus:ring-primary"
+              className="snap-center flex min-w-12 shrink-0 items-center justify-center rounded-2xl border border-border bg-card px-2 py-2 text-text-secondary transition-colors hover:bg-card-hover hover:text-text focus:outline-none focus:ring-2 focus:ring-primary sm:min-w-17"
               aria-label="Open calendar"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -158,7 +153,7 @@ export default function DateRangePicker({
               </svg>
             </button>
             {dates.map((date) => {
-              const key = formatDate(date);
+              const key = formatGregorianKey(date);
               const isSelected = selectedKey === key;
               const isToday = sameDay(date, today);
               return (
@@ -167,7 +162,7 @@ export default function DateRangePicker({
                   type="button"
                   data-date={key}
                   onClick={() => handleDateChange(new Date(date))}
-                  className={`snap-center flex flex-col items-center rounded-2xl px-3 py-2 text-left text-sm transition-all min-w-17 ${
+                  className={`snap-center flex shrink-0 flex-col items-center rounded-2xl px-2 py-1.5 text-left transition-all min-w-12 sm:min-w-17 sm:px-3 sm:py-2 ${
                     isSelected
                       ? "bg-primary text-white"
                       : isToday
@@ -175,17 +170,19 @@ export default function DateRangePicker({
                       : "bg-card text-text-secondary hover:bg-card-hover hover:text-text"
                   }`}
                 >
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.08em]">
-                    {getRelativeDateLabel(date, today)}
+                  <span className="whitespace-nowrap text-[9px] font-semibold uppercase tracking-wide sm:text-[10px] sm:tracking-[0.08em]">
+                    {formatRelativeDayLabel(date, locale, strings.dates)}
                   </span>
-                  <span className="mt-1 font-bold text-sm">{getDateLabel(date)}</span>
+                  <span className="mt-0.5 whitespace-nowrap text-[11px] font-bold sm:mt-1 sm:text-sm">
+                    {formatDate(date, "short")}
+                  </span>
                 </button>
               );
             })}
-<button
+            <button
               type="button"
               onClick={() => setShowCalendar((current) => !current)}
-              className="snap-center flex min-w-17 items-center justify-center rounded-2xl border border-border bg-card text-text-secondary transition-colors hover:bg-card-hover hover:text-text focus:outline-none focus:ring-2 focus:ring-primary"
+              className="snap-center flex min-w-12 shrink-0 items-center justify-center rounded-2xl border border-border bg-card px-2 py-2 text-text-secondary transition-colors hover:bg-card-hover hover:text-text focus:outline-none focus:ring-2 focus:ring-primary sm:min-w-17"
               aria-label="Open calendar"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -213,7 +210,7 @@ export default function DateRangePicker({
               </svg>
             </button>
             <div className="text-sm font-semibold text-text">
-              {calendarMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+              {formatDate(calendarMonth, "monthYear")}
             </div>
             <button
               type="button"
@@ -228,7 +225,7 @@ export default function DateRangePicker({
           </div>
 
           <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold uppercase text-text-secondary">
-            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
+            {(locale === "am" ? ETH_WEEKDAYS_AM.map((day) => day.slice(0, 2)) : ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]).map((day) => (
               <div key={day} className="py-1">{day}</div>
             ))}
           </div>
@@ -238,7 +235,7 @@ export default function DateRangePicker({
               if (!day) {
                 return <div key={`empty-${index}`} className="h-10" />;
               }
-              const key = formatDate(day);
+              const key = formatGregorianKey(day);
               const isToday = sameDay(day, today);
               const isSelectedDay = selectedKey === key;
               return (
@@ -254,7 +251,7 @@ export default function DateRangePicker({
                       : "text-text hover:bg-card-hover"
                   }`}
                 >
-                  {day.getDate()}
+                  {calendarDay(day)}
                 </button>
               );
             })}

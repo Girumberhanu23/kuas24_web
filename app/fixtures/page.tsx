@@ -5,10 +5,11 @@ import Link from "next/link";
 import FixtureCard from "../components/FixtureCard";
 import DateRangePicker from "../components/DateRangePicker";
 import type { Fixture, LeagueCategory } from "../lib/types";
+import { getLeagueSortIndex } from "../lib/leagues";
 
 type StatusFilter = "all" | "live" | "upcoming" | "finished";
 
-const LEAGUES_CACHE_KEY = "kuas24_leagues_v2";
+const LEAGUES_CACHE_KEY = "kuas24_leagues_v3";
 const LEAGUES_CACHE_TTL = 24 * 60 * 60 * 1000;
 
 interface LeaguesCache {
@@ -69,9 +70,14 @@ export default function FixturesPage() {
           leagues: { id: string; name: string; logo: string; country: string }[];
         };
         if (cancelled) return;
+
+        const sortedLeagues = [...json.leagues].sort(
+          (a, b) => getLeagueSortIndex(a.id) - getLeagueSortIndex(b.id)
+        );
+
         const categories: LeagueCategory[] = [
           { id: "all", name: "All" },
-          ...json.leagues.map((l) => ({ id: l.id, name: l.name, logo: l.logo })),
+          ...sortedLeagues.map((l) => ({ id: l.id, name: l.name, logo: l.logo })),
         ];
         setLeagues(categories);
         setCachedLeagues(categories);
@@ -84,7 +90,7 @@ export default function FixturesPage() {
     return () => { cancelled = true; };
   }, []);
 
-  // ── Selected league (default to first real league once loaded) ────
+  // ── Selected league (default to All) ─────────────────────────────
   const [selectedLeagueId, setSelectedLeagueId] = useState("all");
 
   // ── Fixtures ─────────────────────────────────────────────────────
@@ -131,6 +137,12 @@ export default function FixturesPage() {
     acc[key].push(f);
     return acc;
   }, {} as Record<string, Fixture[]>);
+
+  const sortedGroupedEntries = Object.entries(grouped).sort(([keyA], [keyB]) => {
+    const leagueIdA = grouped[keyA][0]?.leagueId ?? keyA;
+    const leagueIdB = grouped[keyB][0]?.leagueId ?? keyB;
+    return getLeagueSortIndex(leagueIdA) - getLeagueSortIndex(leagueIdB);
+  });
 
   const statusTabs: { id: StatusFilter; label: string }[] = [
     { id: "all", label: "All" },
@@ -216,9 +228,9 @@ export default function FixturesPage() {
         <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card py-16">
           <p className="text-sm text-red-400">{error}</p>
         </div>
-      ) : Object.keys(grouped).length > 0 ? (
+      ) : sortedGroupedEntries.length > 0 ? (
         <div className="grid gap-6">
-          {Object.entries(grouped).map(([key, leagueFixtures]) => {
+          {sortedGroupedEntries.map(([key, leagueFixtures]) => {
             const first = leagueFixtures[0];
             return (
               <div key={key}>

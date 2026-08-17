@@ -5,22 +5,25 @@ import { usePathname } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
 import GlobalStreakBadge from "./GlobalStreakBadge";
 import { useAuth } from "../lib/use-auth";
+import { useNavStrings } from "../lib/nav-strings";
+import LocaleToggle from "./LocaleToggle";
 import Image from "next/image";
 
 export default function Header() {
   const pathname = usePathname();
   const { isBroadcaster } = useAuth();
+  const strings = useNavStrings();
 
   const navLinks = [
-    { href: "/", label: "News" },
-    { href: "/fixtures", label: "Fixtures" },
-    { href: "/predictor", label: "Predict" },
-    { href: "/favorites", label: "Favorites" },
-    { href: "/profile", label: "Profile" },
+    { href: "/", label: strings.nav.news },
+    { href: "/fixtures", label: strings.nav.fixtures },
+    { href: "/predictor", label: strings.nav.predict },
+    { href: "/favorites", label: strings.nav.favorites },
+    { href: "/profile", label: strings.nav.profile },
   ];
 
   if (isBroadcaster) {
-    navLinks.splice(4, 0, { href: "/post", label: "Post News" });
+    navLinks.splice(4, 0, { href: "/post", label: strings.nav.postNews });
   }
 
   return (
@@ -63,6 +66,9 @@ export default function Header() {
         {/* Search & Actions */}
         <div className="flex items-center gap-3">
           <GlobalStreakBadge />
+          <div className="block">
+            <LocaleToggle />
+          </div>
           <button className="flex h-10 w-10 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-card hover:text-text">
             <svg
               width="18"

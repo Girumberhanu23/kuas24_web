@@ -1,5 +1,6 @@
 // app/api/leagues/route.ts
 import { NextResponse } from "next/server";
+import { FEATURED_LEAGUES } from "../../lib/leagues";
 
 export async function GET() {
   const apiKey = process.env.API_SPORTS_KEY?.trim();
@@ -9,52 +10,40 @@ export async function GET() {
   }
 
   const season = process.env.API_SPORTS_DEFAULT_SEASON?.trim() || String(new Date().getFullYear());
+  const baseUrl = process.env.API_SPORTS_BASE_URL?.trim() || "https://v3.football.api-sports.io";
 
-  // Fetch both League and Cup types so World Cup, Champions League etc. are included
-  const [leagueRes, cupRes] = await Promise.all([
-    fetch(`https://v3.football.api-sports.io/leagues?season=${season}&type=League`, {
-      headers: { "x-apisports-key": apiKey },
-      next: { revalidate: 86400 },
-    }),
-    fetch(`https://v3.football.api-sports.io/leagues?season=${season}&type=Cup`, {
-      headers: { "x-apisports-key": apiKey },
-      next: { revalidate: 86400 },
-    }),
-  ]);
+  const leagues = await Promise.all(
+    FEATURED_LEAGUES.map(async (league) => {
+      try {
+        const res = await fetch(`${baseUrl}/leagues?id=${league.id}&season=${season}`, {
+          headers: { "x-apisports-key": apiKey },
+          next: { revalidate: 86400 },
+        });
 
-  if (!leagueRes.ok && !cupRes.ok) {
-    return NextResponse.json({ error: "Failed to fetch leagues" }, { status: 502 });
-  }
+        if (res.ok) {
+          const data = await res.json();
+          const item = data.response?.[0];
+          if (item) {
+            return {
+              id: league.id,
+              name: league.name,
+              logo: item.league?.logo ?? "",
+              country: item.country?.name ?? "",
+            };
+          }
+        }
+      } catch {
+        // Fall back to static config below.
+      }
 
-  const leagueData = leagueRes.ok ? await leagueRes.json() : { response: [] };
-  const cupData = cupRes.ok ? await cupRes.json() : { response: [] };
-
-  const combined = [...(leagueData.response ?? []), ...(cupData.response ?? [])];
-
-  if (combined.length === 0) {
-    return NextResponse.json({ leagues: [] });
-  }
-
-  const leagues = combined.map((item: any) => ({
-    id: String(item.league.id),
-    name: item.league.name,
-    logo: item.league.logo,
-    country: item.country?.name ?? "",
-  }));
-
-  // Sort: put well-known competitions first
-  const priority = [
-    "World Cup", "UEFA Champions League", "Premier League",
-    "La Liga", "Serie A", "Bundesliga", "Ligue 1", "UEFA Europa League",
-  ];
-  leagues.sort((a: any, b: any) => {
-    const ai = priority.indexOf(a.name);
-    const bi = priority.indexOf(b.name);
-    if (ai !== -1 && bi !== -1) return ai - bi;
-    if (ai !== -1) return -1;
-    if (bi !== -1) return 1;
-    return a.name.localeCompare(b.name);
-  });
+      return {
+        id: league.id,
+        name: league.name,
+        logo: "",
+        country: "",
+      };
+    })
+  );
 
   return NextResponse.json({ leagues });
 }
