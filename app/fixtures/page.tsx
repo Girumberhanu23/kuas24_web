@@ -5,7 +5,8 @@ import Link from "next/link";
 import FixtureCard from "../components/FixtureCard";
 import DateRangePicker from "../components/DateRangePicker";
 import type { Fixture, LeagueCategory } from "../lib/types";
-import { getLeagueSortIndex } from "../lib/leagues";
+import { getLeagueSortIndex, getLocalizedLeagueName, localizeLeagueCategories } from "../lib/leagues";
+import { useLocale } from "../lib/locale";
 
 type StatusFilter = "all" | "live" | "upcoming" | "finished";
 
@@ -22,26 +23,55 @@ function toYYYYMMDD(date: Date) {
   return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
 }
 
-function getCachedLeagues(): LeagueCategory[] | null {
+function getLeaguesCacheKey(locale: string) {
+  return `${LEAGUES_CACHE_KEY}_${locale}`;
+}
+
+function getCachedLeagues(locale: string): LeagueCategory[] | null {
   try {
-    const raw = sessionStorage.getItem(LEAGUES_CACHE_KEY);
+    const raw = sessionStorage.getItem(getLeaguesCacheKey(locale));
     if (!raw) return null;
     const parsed: LeaguesCache = JSON.parse(raw);
     if (Date.now() - parsed.timestamp > LEAGUES_CACHE_TTL) {
-      sessionStorage.removeItem(LEAGUES_CACHE_KEY);
+      sessionStorage.removeItem(getLeaguesCacheKey(locale));
       return null;
     }
     return parsed.leagues;
   } catch { return null; }
 }
 
-function setCachedLeagues(leagues: LeagueCategory[]) {
+function setCachedLeagues(locale: string, leagues: LeagueCategory[]) {
   try {
-    sessionStorage.setItem(LEAGUES_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), leagues }));
+    sessionStorage.setItem(getLeaguesCacheKey(locale), JSON.stringify({ timestamp: Date.now(), leagues }));
   } catch {}
 }
 
 export default function FixturesPage() {
+  const { locale } = useLocale();
+  const copy =
+    locale === "am"
+      ? {
+          title: "ግጥሚያዎች",
+          subtitle: "ቀጥታ ውጤቶች፣ የሚመጡ ግጥሚያዎች እና ውጤቶች",
+          all: "ሁሉም",
+          live: "ቀጥታ",
+          upcoming: "የሚመጣ",
+          finished: "የተጠናቀቀ",
+          loading: "ግጥሚያዎች በመጫን ላይ…",
+          allDates: "ሁሉም ቀኖች",
+          noFixtures: "ለዚህ ቀን ምንም ግጥሚያ አልተገኘም",
+        }
+      : {
+          title: "Fixtures",
+          subtitle: "Live scores, upcoming matches, and results",
+          all: "All",
+          live: "Live",
+          upcoming: "Upcoming",
+          finished: "Finished",
+          loading: "Loading fixtures…",
+          allDates: "All dates",
+          noFixtures: "No fixtures found for this date",
+        };
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
@@ -55,12 +85,13 @@ export default function FixturesPage() {
   const [leaguesLoading, setLeaguesLoading] = useState(true);
 
   useEffect(() => {
-    const cached = getCachedLeagues();
+    const cached = getCachedLeagues(locale);
     if (cached && cached.length > 1) {
       setLeagues(cached);
       setLeaguesLoading(false);
       return;
     }
+    setLeaguesLoading(true);
     let cancelled = false;
     (async () => {
       try {
@@ -76,19 +107,20 @@ export default function FixturesPage() {
         );
 
         const categories: LeagueCategory[] = [
-          { id: "all", name: "All" },
+          { id: "all", name: copy.all },
           ...sortedLeagues.map((l) => ({ id: l.id, name: l.name, logo: l.logo })),
         ];
-        setLeagues(categories);
-        setCachedLeagues(categories);
+        const localizedCategories = localizeLeagueCategories(categories, locale);
+        setLeagues(localizedCategories);
+        setCachedLeagues(locale, localizedCategories);
       } catch {
-        if (!cancelled) setLeagues([{ id: "all", name: "All" }]);
+        if (!cancelled) setLeagues([{ id: "all", name: copy.all }]);
       } finally {
         if (!cancelled) setLeaguesLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [copy.all, locale]);
 
   // ── Selected league (default to All) ─────────────────────────────
   const [selectedLeagueId, setSelectedLeagueId] = useState("all");
@@ -145,18 +177,21 @@ export default function FixturesPage() {
   });
 
   const statusTabs: { id: StatusFilter; label: string }[] = [
-    { id: "all", label: "All" },
-    { id: "live", label: "Live" },
-    { id: "upcoming", label: "Upcoming" },
-    { id: "finished", label: "Finished" },
+    { id: "all", label: copy.all },
+    { id: "live", label: copy.live },
+    { id: "upcoming", label: copy.upcoming },
+    { id: "finished", label: copy.finished },
   ];
+
+  const localizedLeagueName = (name: string | undefined, id?: string) =>
+    getLocalizedLeagueName(name, locale, id);
 
   return (
     <div>
       {/* Header */}
       <div className="mb-6">
-        <h1 className="mb-1 text-2xl font-bold text-text">Fixtures</h1>
-        <p className="text-sm text-text-secondary">Live scores, upcoming matches, and results</p>
+        <h1 className="mb-1 text-2xl font-bold text-text">{copy.title}</h1>
+        <p className="text-sm text-text-secondary">{copy.subtitle}</p>
       </div>
 
       {/* League Filter */}
@@ -222,7 +257,7 @@ export default function FixturesPage() {
       {loading ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card py-16">
           <div className="mb-3 h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <p className="text-sm text-text-secondary">Loading fixtures…</p>
+          <p className="text-sm text-text-secondary">{copy.loading}</p>
         </div>
       ) : error ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card py-16">
@@ -235,7 +270,7 @@ export default function FixturesPage() {
             return (
               <div key={key}>
                 <Link
-                  href={`/leagues/${first.leagueId ?? key}?name=${encodeURIComponent(first.league)}&logo=${encodeURIComponent(first.leagueLogo ?? "")}`}
+                  href={`/leagues/${first.leagueId ?? key}?name=${encodeURIComponent(localizedLeagueName(first.league, first.leagueId))}&logo=${encodeURIComponent(first.leagueLogo ?? "")}`}
                   className="mb-3 flex items-center gap-2 group"
                 >
                   <div className="h-5 w-1 rounded-full bg-primary" />
@@ -243,7 +278,7 @@ export default function FixturesPage() {
                     <img src={first.leagueLogo} alt="" className="h-5 w-5 object-contain" />
                   )}
                   <h3 className="text-sm font-bold uppercase tracking-wider text-text-secondary group-hover:text-primary transition-colors">
-                    {first.league}
+                    {localizedLeagueName(first.league, first.leagueId)}
                   </h3>
                   <span className="rounded bg-card px-1.5 py-0.5 text-[10px] text-text-secondary">
                     {leagueFixtures.length}
@@ -269,7 +304,7 @@ export default function FixturesPage() {
             <line x1="8" x2="8" y1="2" y2="6" />
             <line x1="3" x2="21" y1="10" y2="10" />
           </svg>
-          <p className="text-sm text-text-secondary">No fixtures found for this date</p>
+          <p className="text-sm text-text-secondary">{copy.noFixtures}</p>
         </div>
       )}
     </div>
