@@ -6,6 +6,8 @@ import type { KeyboardEventHandler } from "react";
 import { slugify } from "../lib/slug";
 import type { NewsArticle } from "../lib/types";
 import { useDateFormat } from "../lib/date-format";
+import { useLocale } from "../lib/locale";
+import { getLocalizedLeagueName } from "../lib/leagues";
 
 interface NewsCardProps {
   article: NewsArticle;
@@ -21,9 +23,11 @@ export default function NewsCard({
   onToggleFavorite,
 }: NewsCardProps) {
   const { formatDate } = useDateFormat();
+  const { locale } = useLocale();
   const router = useRouter();
   const channelHref = `/channel/${encodeURIComponent(slugify(article.author))}`;
   const detailHref = `/news/${article.id}`;
+  const localizedLeague = getLocalizedLeagueName(article.league, locale);
 
   const openDetail = () => router.push(detailHref);
 
@@ -62,7 +66,7 @@ export default function NewsCard({
               {article.category}
             </span>
             <span className="rounded-full bg-bg/70 px-3 py-1 text-xs font-medium text-text backdrop-blur-sm">
-              {article.league}
+              {localizedLeague}
             </span>
           </div>
           {onToggleFavorite && (
@@ -149,7 +153,7 @@ export default function NewsCard({
             <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
               {article.category}
             </span>
-            <span className="text-[10px] text-text-secondary">{article.league}</span>
+            <span className="text-[10px] text-text-secondary">{localizedLeague}</span>
           </div>
           <h3 className="break-words text-sm font-semibold leading-snug text-text transition-colors group-hover:text-primary sm:text-base">
             {article.title}
