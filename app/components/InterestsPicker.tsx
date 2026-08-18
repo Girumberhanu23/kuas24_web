@@ -12,6 +12,7 @@ import {
   savePersonalizationPreferences,
 } from "../lib/personalization";
 import { useLocale } from "../lib/locale";
+import { getLocalizedLeagueName } from "../lib/leagues";
 import type {
   PersonalizationOption,
   PersonalizationOptions,
@@ -232,7 +233,7 @@ export default function InterestsPicker({
               const logoVal = rec['logo'] ?? leagueObj?.['logo'];
               return {
                 id: String(idVal ?? ""),
-                name: String(nameVal ?? ""),
+                name: getLocalizedLeagueName(String(nameVal ?? ""), locale),
                 logo: (logoVal as string | undefined) ?? undefined,
                 type: "league",
               };
