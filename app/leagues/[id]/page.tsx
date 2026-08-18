@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useLocale } from "../../lib/locale";
+import { getLocalizedLeagueName } from "../../lib/leagues";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface MatchData {
@@ -610,8 +612,9 @@ export default function LeaguePage() {
   const { id } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { locale } = useLocale();
 
-  const leagueName = searchParams.get("name") ?? "League";
+  const leagueName = getLocalizedLeagueName(searchParams.get("name") ?? "League", locale);
   const leagueLogo = searchParams.get("logo") ?? "";
   const isWorldCup = id === WORLD_CUP_ID;
   const season = isWorldCup ? "2022" : "2024";

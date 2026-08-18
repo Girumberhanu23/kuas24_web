@@ -14,12 +14,15 @@ import {
 } from "./lib/personalization";
 import type { NewsArticle } from "./lib/types";
 import { leagueCategories } from "./lib/data";
+import { useLocale } from "./lib/locale";
+import { localizeLeagueCategories } from "./lib/leagues";
 
 interface HomeClientProps {
   initialNews: NewsArticle[];
 }
 
 export default function HomeClient({ initialNews }: HomeClientProps) {
+  const { locale } = useLocale();
   const [selectedLeague, setSelectedLeague] = useState("all");
   const [interestNames, setInterestNames] = useState({
     leagues: [] as string[],
@@ -102,6 +105,7 @@ export default function HomeClient({ initialNews }: HomeClientProps) {
       ? orderedNews
       : orderedNews.filter((a) => a.league === selectedLeague);
 
+  const localizedLeagueCategories = localizeLeagueCategories(leagueCategories, locale);
   const featuredArticles = filteredNews.filter((a) => a.featured);
   const regularArticles = filteredNews.filter((a) => !a.featured);
 
@@ -109,7 +113,7 @@ export default function HomeClient({ initialNews }: HomeClientProps) {
     <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:gap-8">
       {/* League Filter */}
       <div className="min-w-0">
-        <SportFilter selected={selectedLeague} onSelect={setSelectedLeague} categories={leagueCategories} />
+        <SportFilter selected={selectedLeague} onSelect={setSelectedLeague} categories={localizedLeagueCategories} />
       </div>
       <div className="hidden xl:block" aria-hidden="true" />
 

@@ -25,7 +25,8 @@ import PredictorFixtureCard from "../components/PredictorFixtureCard";
 import PredictorLeaderboard from "../components/PredictorLeaderboard";
 import LocaleToggle from "../components/LocaleToggle";
 import { useDateFormat } from "../lib/date-format";
-import { getLeagueSortIndex } from "../lib/leagues";
+import { useLocale } from "../lib/locale";
+import { getLeagueSortIndex, getLocalizedLeagueName } from "../lib/leagues";
 
 const POLL_INTERVAL_MS = 60_000;
 
@@ -259,6 +260,7 @@ function PredictionHistoryTab({
 export default function PredictorPage() {
   const { isAuthenticated, user } = useAuth();
   const strings = usePredictorStrings();
+  const { locale } = useLocale();
   const [activeTab, setActiveTab] = useState<Tab>("upcoming");
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     const today = new Date();
@@ -391,6 +393,7 @@ export default function PredictorPage() {
     leaderboard: strings.tabs.leaderboard,
   };
 
+  const localizedLeagueLabel = (name?: string) => getLocalizedLeagueName(name, locale);
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const filteredFixtures = useMemo(() => {
     if (!normalizedSearch) return fixtures;
@@ -433,7 +436,7 @@ export default function PredictorPage() {
           <h1 className="mb-1 text-2xl font-bold text-text">{strings.pageTitle}</h1>
           <p className="text-sm text-text-secondary">{strings.pageSubtitle}</p>
         </div>
-        <LocaleToggle />
+        {/* <LocaleToggle /> */}
       </div>
 
       <div className="mb-6 flex items-center gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5">
@@ -507,7 +510,7 @@ export default function PredictorPage() {
                 {Object.entries(groupedByLeague).map(([leagueName, leagueFixtures]) => (
                   <div key={leagueName}>
                     <div className="mb-3 flex items-center gap-3">
-                      <h3 className="text-sm font-bold uppercase tracking-wider text-text-secondary">{leagueName}</h3>
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-text-secondary">{localizedLeagueLabel(leagueName)}</h3>
                       <span className="rounded bg-card px-2 py-0.5 text-[10px] text-text-secondary">{leagueFixtures.length}</span>
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">

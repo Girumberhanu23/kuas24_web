@@ -136,32 +136,63 @@ export default function BottomNav() {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface/95 backdrop-blur-md md:hidden">
-      <div className="flex items-center justify-around py-2 pb-[max(env(safe-area-inset-bottom),0.5rem)]">
-        {items.map((item) => {
-          const isActive =
-            pathname === item.href ||
-            (item.href !== "/" && pathname.startsWith(item.href));
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-                className={`relative flex flex-col items-center gap-1 rounded-lg px-3 py-1.5 transition-colors ${
-                isActive
-                  ? "text-primary"
-                  : "text-text-secondary hover:text-text"
+  <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#111318] md:hidden">
+    <div className="mx-auto flex max-w-2xl items-stretch">
+      {items.map((item) => {
+        const isActive =
+          pathname === item.href ||
+          (item.href !== "/" && pathname.startsWith(item.href));
+
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`relative flex min-h-[68px] flex-1 flex-col items-center justify-center gap-1.5 px-2 transition-all duration-200 ${
+              isActive
+                ? "text-white"
+                : "text-white/50 hover:text-white/80"
+            }`}
+          >
+            {/* Active top border */}
+            {isActive && (
+              <span
+                className="absolute left-1/2 top-0 h-[3px] w-12 -translate-x-1/2 rounded-b-full bg-primary"
+                aria-hidden
+              />
+            )}
+
+            {/* Active background */}
+            {isActive && (
+              <span
+                className="absolute inset-x-2 top-2 bottom-2 rounded-lg bg-white/[0.08]"
+                aria-hidden
+              />
+            )}
+
+            {/* Icon */}
+            <span
+              className={`relative z-10 flex items-center justify-center transition-transform duration-200 ${
+                isActive ? "scale-110" : ""
               }`}
             >
-                {/* Active indicator: small rounded pill above the icon on mobile */}
-                {isActive && (
-                  <span className="absolute -top-2 w-8 h-0.5 rounded-full bg-primary" aria-hidden />
-                )}
-                {item.icon}
-              <span className="text-[10px] font-medium">{item.label}</span>
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
-  );
+              {item.icon}
+            </span>
+
+            {/* Label */}
+            <span
+              className={`relative z-10 text-[11px] leading-none tracking-wide ${
+                isActive ? "font-bold" : "font-medium"
+              }`}
+            >
+              {item.label}
+            </span>
+          </Link>
+        );
+      })}
+    </div>
+
+    {/* Safe area */}
+    <div className="bg-[#111318] pb-[env(safe-area-inset-bottom)]" />
+  </nav>
+);
 }

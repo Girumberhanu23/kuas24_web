@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { usePredictorStrings } from "../lib/predictor-strings";
 import { useDateFormat } from "../lib/date-format";
+import { useLocale } from "../lib/locale";
+import { getLocalizedLeagueName } from "../lib/leagues";
 import type { PredictorFixture, PredictorPick } from "../lib/predictor-types";
 
 interface PredictorFixtureCardProps {
@@ -29,6 +31,7 @@ export default function PredictorFixtureCard({
   onNeedLogin,
 }: PredictorFixtureCardProps) {
   const strings = usePredictorStrings();
+  const { locale } = useLocale();
   const { formatDate, formatTime } = useDateFormat();
   // const router = useRouter();
 
@@ -67,7 +70,7 @@ export default function PredictorFixtureCard({
     <div className="rounded-xl border border-border bg-card px-4 py-3">
       <div className="mb-3 flex items-center justify-between text-xs text-text-secondary">
         <span>
-          {fixture.league.name} · {dateLabel} · {timeLabel}
+          {getLocalizedLeagueName(fixture.league.name, locale)} · {dateLabel} · {timeLabel}
         </span>
       </div>
 

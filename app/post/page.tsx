@@ -5,6 +5,8 @@ import { useState } from "react";
 import { API_BASE_URL } from "../lib/api";
 import { getAuthHeaderValue } from "../lib/auth";
 import { leagueCategories } from "../lib/data";
+import { localizeLeagueCategories, getLocalizedLeagueName } from "../lib/leagues";
+import { useLocale } from "../lib/locale";
 import { useAuth } from "../lib/use-auth";
 
 async function createNewsPost(payload: {
@@ -61,6 +63,7 @@ function readFileAsDataUrl(
 }
 
 export default function PostNewsPage() {
+  const { locale } = useLocale();
   const { isAuthenticated, isBroadcaster, user } = useAuth();
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
@@ -76,7 +79,10 @@ export default function PostNewsPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const leagueOptions = leagueCategories.filter((l) => l.id !== "all");
+  const leagueOptions = localizeLeagueCategories(
+    leagueCategories.filter((l) => l.id !== "all"),
+    locale
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

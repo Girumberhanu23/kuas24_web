@@ -77,7 +77,7 @@ const en: NavStrings = {
 const am: NavStrings = {
   nav: {
     news: "ዜና",
-    fixtures: "ጨዋታዎች",
+    fixtures: "ግጥሚያዎች",
     predict: "ትንበያ",
     favorites: "ተወዳጆች",
     profile: "መገለጫ",
@@ -99,8 +99,8 @@ const am: NavStrings = {
     aboutUs: "ስለ እኛ",
     ctaTitle: "ምንም ጨዋታ እንዳያመልጥዎት ⚽",
     ctaBody:
-      "ወቅታዊ ዜና፣ ጨዋታዎች፣ ቀጥታ ውጤቶች፣ ሽግግሮች እና የጨዋታ ማጠቃለያዎች በሚከሰቱበት ጊዜ ይቀበሉ።",
-    stayUpdated: "ዝመና ይኑ",
+      "ወቅታዊ ዜና፣ ግጥሚያዎች ቀጥታ ውጤቶች፣ ሽግግሮች እና የጨዋታ ማጠቃለያዎች በሚከሰቱበት ጊዜ ይቀበሉ።",
+    stayUpdated: "ወቅታዊ መረጃዎችን ያግኙ",
     allRightsReserved: "ሁሉም መብቶች የተጠበቁ ናቸው።",
     builtForFans: "ለስፖርት ደጋፊዎች የተሰራ",
   },
