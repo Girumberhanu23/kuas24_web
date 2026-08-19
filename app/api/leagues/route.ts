@@ -1,6 +1,7 @@
 // app/api/leagues/route.ts
 import { NextResponse } from "next/server";
 import { FEATURED_LEAGUES } from "../../lib/leagues";
+import { getLocalLeagueLogo } from "../../lib/leagueLogos";
 
 export async function GET() {
   const apiKey = process.env.API_SPORTS_KEY?.trim();
@@ -27,7 +28,7 @@ export async function GET() {
             return {
               id: league.id,
               name: league.name,
-              logo: item.league?.logo ?? "",
+              logo: getLocalLeagueLogo(league.name, league.id) ?? item.league?.logo ?? "",
               country: item.country?.name ?? "",
             };
           }
@@ -39,7 +40,7 @@ export async function GET() {
       return {
         id: league.id,
         name: league.name,
-        logo: "",
+        logo: getLocalLeagueLogo(league.name, league.id) ?? "",
         country: "",
       };
     })

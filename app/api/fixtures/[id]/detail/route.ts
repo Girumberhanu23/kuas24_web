@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getLocalLeagueLogo } from "../../../../lib/leagueLogos";
 
 function mapStatus(short: string): "live" | "finished" | "upcoming" {
   const s = short.toUpperCase();
@@ -45,7 +46,7 @@ export async function GET(
       id: String(item.fixture.id),
       leagueId: String(item.league.id),
       league: item.league.name,
-      leagueLogo: item.league.logo,
+      leagueLogo: getLocalLeagueLogo(item.league.name, item.league.id) ?? item.league.logo,
       referee: item.fixture.referee ?? undefined,
       homeTeam: item.teams.home.name,
       homeTeamLogo: item.teams.home.logo,
